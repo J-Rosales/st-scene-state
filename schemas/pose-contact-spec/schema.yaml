@@ -25,9 +25,22 @@ objects:
     name: string
     type: string
     confidence: number
+    salience_score: number
 narrative_projection:
   - text: string
     confidence: number
+conflicts:
+  - entity_id: string
+    fields:
+      - string
+    previous_value: string
+    current_value: string
+    confidence_comparison:
+      previous: number
+      current: number
+    message_indices:
+      previous: number
+      current: number
 conflict_notes:
   - text: string
     confidence: number

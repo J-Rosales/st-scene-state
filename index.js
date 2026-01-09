@@ -12,6 +12,26 @@
   };
 
   const SCHEMA_VERSION = "pose-contact-spec-0.1";
+  const PRONOUN_NAMES = new Set([
+    "he",
+    "him",
+    "his",
+    "she",
+    "her",
+    "hers",
+    "they",
+    "them",
+    "their",
+    "theirs",
+    "it",
+    "its"
+  ]);
+  const SALIENCE_WEIGHTS = {
+    recency: 0.4,
+    interaction: 0.2,
+    confidence: 0.3,
+    explicit: 0.1
+  };
 
   const state = {
     ui: {
@@ -157,11 +177,12 @@
       "Schema (pose-contact-spec inspired):",
       "schema_version: string",
       "agents: [ { id, name, present, confidence, salience_score, posture: { value, confidence }, anchors: [ { name, contacts: [ { target, kind, confidence } ], supports: [ { target, confidence } ] } ] } ]",
-      "objects: [ { id, name, type, confidence } ]",
+      "objects: [ { id, name, type, confidence, salience_score } ]",
       "narrative_projection: [ { text, confidence } ]",
       "conflict_notes: [ { text, confidence } ]",
-      "Salience scoring: prioritize recent mentions in the last K messages, degree of interaction (contacts/supports), and confidence mass.",
-      "If an agent was present in the prior snapshot with the same name, reuse the same id.",
+      "Salience scoring: prioritize recent mentions in the last K messages (extra weight for last message), degree of interaction (contacts/supports), confidence mass, and explicit naming.",
+      "If an agent/object was present in the prior snapshot with the same name, reuse the same id (case-insensitive). Do not merge different explicit names; pronouns may refer to a prior entity.",
+      "If posture/support changed but uncertain, reduce confidence instead of hard switches.",
       "If you are unsure about a fact, reduce confidence rather than guessing.",
       "Messages:",
       formattedMessages,
@@ -364,6 +385,8 @@
       }
       applyContinuity(snapshotObj, chatState.snapshot_obj);
       computeSalienceScores(snapshotObj, messages);
+      detectConflicts(snapshotObj, chatState.snapshot_obj, messages);
+      sortEntitiesBySalience(snapshotObj);
       enforceMaxCharacters(snapshotObj);
       const canonicalYaml = dumpYaml(snapshotObj);
       persistChatState({
@@ -391,53 +414,326 @@
     const settings = getExtensionSettings();
     if (!snapshotObj?.agents || !Array.isArray(snapshotObj.agents)) return;
     if (snapshotObj.agents.length <= settings.max_present_characters) return;
-    snapshotObj.agents.sort((a, b) => {
-      const scoreA = Number(a.salience_score ?? a.confidence ?? 0);
-      const scoreB = Number(b.salience_score ?? b.confidence ?? 0);
-      return scoreB - scoreA;
-    });
+    snapshotObj.agents.sort(compareBySalienceThenName);
     snapshotObj.agents = snapshotObj.agents.slice(0, settings.max_present_characters);
   }
 
   function applyContinuity(snapshotObj, previousObj) {
-    if (!snapshotObj?.agents || !Array.isArray(snapshotObj.agents)) return;
-    if (!previousObj?.agents || !Array.isArray(previousObj.agents)) return;
-    const priorByName = new Map(
-      previousObj.agents
-        .filter((agent) => agent?.name)
-        .map((agent) => [String(agent.name).toLowerCase(), agent])
-    );
-    snapshotObj.agents.forEach((agent) => {
-      if (!agent?.name) return;
-      const match = priorByName.get(String(agent.name).toLowerCase());
-      if (match?.id) {
-        agent.id = match.id;
-      }
-    });
+    const previousAgents = previousObj?.agents;
+    const previousObjects = previousObj?.objects;
+    if (snapshotObj?.agents && Array.isArray(snapshotObj.agents)) {
+      // ID stability rules:
+      // - Reuse prior IDs when names match case-insensitively.
+      // - If multiple candidates match, pick highest prior salience.
+      // - Do not merge different explicit names; pronouns may reuse a prior ID.
+      const priorByName = buildEntityLookup(previousAgents);
+      const priorBySalience = [...(previousAgents || [])].sort(compareBySalienceThenName);
+      snapshotObj.agents.forEach((agent, index) => {
+        if (!agent) return;
+        const name = normalizeEntityName(agent.name);
+        if (name) {
+          const match = selectEntityMatch(name, priorByName, priorBySalience, agent.name);
+          if (match?.id) {
+            agent.id = match.id;
+          }
+        }
+        if (!agent.id) {
+          agent.id = buildStableId("agent", agent.name, index);
+        }
+      });
+    }
+    if (snapshotObj?.objects && Array.isArray(snapshotObj.objects)) {
+      const priorByName = buildEntityLookup(previousObjects);
+      const priorBySalience = [...(previousObjects || [])].sort(compareBySalienceThenName);
+      snapshotObj.objects.forEach((object, index) => {
+        if (!object) return;
+        const name = normalizeEntityName(object.name);
+        if (name) {
+          const match = selectEntityMatch(name, priorByName, priorBySalience, object.name);
+          if (match?.id) {
+            object.id = match.id;
+          }
+        }
+        if (!object.id) {
+          object.id = buildStableId("object", object.name, index);
+        }
+      });
+    }
   }
 
   function computeSalienceScores(snapshotObj, messages) {
-    if (!snapshotObj?.agents || !Array.isArray(snapshotObj.agents)) return;
-    const recentText = messages.map((msg) => msg.content.toLowerCase());
-    snapshotObj.agents.forEach((agent) => {
-      const name = String(agent.name || "").toLowerCase();
-      let score = Number(agent.confidence ?? 0.4);
-      if (agent.posture?.value) score += 0.1;
-      const anchorCount = Array.isArray(agent.anchors) ? agent.anchors.length : 0;
-      if (anchorCount > 0) score += 0.1;
-      const contactCount = (agent.anchors || []).reduce((sum, anchor) => {
-        return sum + (anchor.contacts?.length || 0) + (anchor.supports?.length || 0);
-      }, 0);
-      score += Math.min(0.2, contactCount * 0.05);
-      if (name) {
-        const mentions = recentText.reduce(
-          (sum, text) => sum + (text.includes(name) ? 1 : 0),
-          0
+    if (!snapshotObj) return;
+    const settings = getExtensionSettings();
+    const windowed = messages.slice(-settings.context_window_k);
+    const recentText = windowed.map((msg) => String(msg.content || "").toLowerCase());
+    const lastMessageText = recentText[recentText.length - 1] || "";
+    if (snapshotObj.agents && Array.isArray(snapshotObj.agents)) {
+      snapshotObj.agents.forEach((agent) => {
+        const name = normalizeEntityName(agent?.name);
+        const mentionCount = name ? countMentions(recentText, name) : 0;
+        const lastMention = name && lastMessageText.includes(name) ? 1 : 0;
+        const recencyScore = Math.min(
+          1,
+          (mentionCount / Math.max(1, recentText.length)) * 0.7 + lastMention * 0.3
         );
-        score += Math.min(0.2, mentions * 0.05);
+        const interactionCount = countAgentInteractions(agent);
+        const interactionScore = Math.min(1, interactionCount / 6);
+        const confidenceMass = sumAgentConfidenceMass(agent);
+        const confidenceScore = Math.min(1, confidenceMass / 3);
+        const explicitBonus = mentionCount > 0 ? 1 : 0;
+        const score =
+          recencyScore * SALIENCE_WEIGHTS.recency +
+          interactionScore * SALIENCE_WEIGHTS.interaction +
+          confidenceScore * SALIENCE_WEIGHTS.confidence +
+          explicitBonus * SALIENCE_WEIGHTS.explicit;
+        agent.salience_score = Number(score.toFixed(3));
+      });
+    }
+    if (snapshotObj.objects && Array.isArray(snapshotObj.objects)) {
+      snapshotObj.objects.forEach((object) => {
+        const name = normalizeEntityName(object?.name);
+        const mentionCount = name ? countMentions(recentText, name) : 0;
+        const lastMention = name && lastMessageText.includes(name) ? 1 : 0;
+        const recencyScore = Math.min(
+          1,
+          (mentionCount / Math.max(1, recentText.length)) * 0.7 + lastMention * 0.3
+        );
+        const interactionCount = countObjectInteractions(snapshotObj.agents, object);
+        const interactionScore = Math.min(1, interactionCount / 6);
+        const confidenceMass = sumObjectConfidenceMass(object, snapshotObj.agents);
+        const confidenceScore = Math.min(1, confidenceMass / 3);
+        const explicitBonus = mentionCount > 0 ? 1 : 0;
+        const score =
+          recencyScore * SALIENCE_WEIGHTS.recency +
+          interactionScore * SALIENCE_WEIGHTS.interaction +
+          confidenceScore * SALIENCE_WEIGHTS.confidence +
+          explicitBonus * SALIENCE_WEIGHTS.explicit;
+        object.salience_score = Number(score.toFixed(3));
+      });
+    }
+  }
+
+  function detectConflicts(snapshotObj, previousObj, messages) {
+    const settings = getExtensionSettings();
+    const windowed = messages.slice(-settings.context_window_k);
+    const recentText = windowed.map((msg) => String(msg.content || "").toLowerCase());
+    const conflicts = [];
+    const previousAgents = previousObj?.agents;
+    if (!snapshotObj?.agents || !Array.isArray(snapshotObj.agents)) {
+      snapshotObj.conflicts = conflicts;
+      return;
+    }
+    snapshotObj.agents.forEach((agent) => {
+      if (!agent?.id || !previousAgents || !Array.isArray(previousAgents)) return;
+      const previousAgent = previousAgents.find((prior) => prior?.id === agent.id);
+      if (!previousAgent) return;
+      const postureConflict = compareConflict(
+        "posture",
+        previousAgent?.posture?.value,
+        agent?.posture?.value,
+        Number(previousAgent?.posture?.confidence ?? 0),
+        Number(agent?.posture?.confidence ?? 0),
+        recentText
+      );
+      if (postureConflict) {
+        conflicts.push({ entity_id: agent.id, ...postureConflict });
       }
-      agent.salience_score = Math.min(1, Number(score.toFixed(3)));
+      const previousSupport = getPrimarySupport(previousAgent);
+      const currentSupport = getPrimarySupport(agent);
+      const supportConflict = compareConflict(
+        "primary_support",
+        previousSupport?.target,
+        currentSupport?.target,
+        Number(previousSupport?.confidence ?? 0),
+        Number(currentSupport?.confidence ?? 0),
+        recentText
+      );
+      if (supportConflict) {
+        conflicts.push({ entity_id: agent.id, ...supportConflict });
+      }
     });
+    snapshotObj.conflicts = conflicts;
+  }
+
+  function compareConflict(field, previousValue, currentValue, previousConfidence, currentConfidence, recentText) {
+    if (!previousValue || !currentValue) return null;
+    if (String(previousValue).toLowerCase() === String(currentValue).toLowerCase()) {
+      return null;
+    }
+    return {
+      fields: [field],
+      previous_value: previousValue,
+      current_value: currentValue,
+      confidence_comparison: {
+        previous: Number(previousConfidence.toFixed(3)),
+        current: Number(currentConfidence.toFixed(3))
+      },
+      message_indices: {
+        previous: findLastMentionIndex(recentText, previousValue),
+        current: findLastMentionIndex(recentText, currentValue)
+      }
+    };
+  }
+
+  function findLastMentionIndex(recentText, term) {
+    if (!term) return null;
+    const normalized = normalizeEntityName(term);
+    if (!normalized) return null;
+    for (let i = recentText.length - 1; i >= 0; i -= 1) {
+      if (recentText[i].includes(normalized)) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  function sortEntitiesBySalience(snapshotObj) {
+    if (snapshotObj?.agents && Array.isArray(snapshotObj.agents)) {
+      snapshotObj.agents.sort(compareBySalienceThenName);
+    }
+    if (snapshotObj?.objects && Array.isArray(snapshotObj.objects)) {
+      snapshotObj.objects.sort(compareBySalienceThenName);
+    }
+  }
+
+  function compareBySalienceThenName(a, b) {
+    const scoreA = Number(a?.salience_score ?? a?.confidence ?? 0);
+    const scoreB = Number(b?.salience_score ?? b?.confidence ?? 0);
+    if (scoreA !== scoreB) return scoreB - scoreA;
+    const nameA = normalizeEntityName(a?.name);
+    const nameB = normalizeEntityName(b?.name);
+    if (nameA !== nameB) return nameA.localeCompare(nameB);
+    return String(a?.id || "").localeCompare(String(b?.id || ""));
+  }
+
+  function normalizeEntityName(name) {
+    return String(name || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+  }
+
+  function buildEntityLookup(entities) {
+    const lookup = new Map();
+    (entities || []).forEach((entity) => {
+      const key = normalizeEntityName(entity?.name);
+      if (!key) return;
+      if (!lookup.has(key)) lookup.set(key, []);
+      lookup.get(key).push(entity);
+    });
+    return lookup;
+  }
+
+  function selectEntityMatch(normalizedName, priorByName, priorBySalience, rawName) {
+    if (!normalizedName) return null;
+    const matches = priorByName.get(normalizedName) || [];
+    if (matches.length === 1) return matches[0];
+    if (matches.length > 1) {
+      return matches.slice().sort(compareBySalienceThenName)[0];
+    }
+    if (isPronounName(rawName)) {
+      return priorBySalience[0] || null;
+    }
+    return null;
+  }
+
+  function isPronounName(name) {
+    const normalized = normalizeEntityName(name);
+    return PRONOUN_NAMES.has(normalized);
+  }
+
+  function buildStableId(prefix, name, index) {
+    const slug = normalizeEntityName(name).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    if (slug) return `${prefix}-${slug}`;
+    return `${prefix}-unknown-${index}`;
+  }
+
+  function countMentions(recentText, name) {
+    return recentText.reduce((sum, text) => sum + (text.includes(name) ? 1 : 0), 0);
+  }
+
+  function countAgentInteractions(agent) {
+    if (!agent?.anchors || !Array.isArray(agent.anchors)) return 0;
+    return agent.anchors.reduce((sum, anchor) => {
+      return sum + (anchor?.contacts?.length || 0) + (anchor?.supports?.length || 0);
+    }, 0);
+  }
+
+  function sumAgentConfidenceMass(agent) {
+    let total = Number(agent?.confidence ?? 0);
+    total += Number(agent?.posture?.confidence ?? 0);
+    if (agent?.anchors && Array.isArray(agent.anchors)) {
+      agent.anchors.forEach((anchor) => {
+        (anchor?.contacts || []).forEach((contact) => {
+          total += Number(contact?.confidence ?? 0);
+        });
+        (anchor?.supports || []).forEach((support) => {
+          total += Number(support?.confidence ?? 0);
+        });
+      });
+    }
+    return total;
+  }
+
+  function countObjectInteractions(agents, object) {
+    if (!agents || !Array.isArray(agents)) return 0;
+    const objectKey = normalizeEntityName(object?.name || object?.id);
+    if (!objectKey) return 0;
+    return agents.reduce((sum, agent) => {
+      return sum + countObjectMentionsInAgent(agent, objectKey);
+    }, 0);
+  }
+
+  function sumObjectConfidenceMass(object, agents) {
+    let total = Number(object?.confidence ?? 0);
+    if (!agents || !Array.isArray(agents)) return total;
+    const objectKey = normalizeEntityName(object?.name || object?.id);
+    if (!objectKey) return total;
+    agents.forEach((agent) => {
+      (agent?.anchors || []).forEach((anchor) => {
+        (anchor?.contacts || []).forEach((contact) => {
+          if (normalizeEntityName(contact?.target) === objectKey) {
+            total += Number(contact?.confidence ?? 0);
+          }
+        });
+        (anchor?.supports || []).forEach((support) => {
+          if (normalizeEntityName(support?.target) === objectKey) {
+            total += Number(support?.confidence ?? 0);
+          }
+        });
+      });
+    });
+    return total;
+  }
+
+  function countObjectMentionsInAgent(agent, objectKey) {
+    if (!agent?.anchors || !Array.isArray(agent.anchors)) return 0;
+    return agent.anchors.reduce((sum, anchor) => {
+      const contacts = (anchor?.contacts || []).filter(
+        (contact) => normalizeEntityName(contact?.target) === objectKey
+      ).length;
+      const supports = (anchor?.supports || []).filter(
+        (support) => normalizeEntityName(support?.target) === objectKey
+      ).length;
+      return sum + contacts + supports;
+    }, 0);
+  }
+
+  function getPrimarySupport(agent) {
+    let bestSupport = null;
+    (agent?.anchors || []).forEach((anchor) => {
+      (anchor?.supports || []).forEach((support) => {
+        const confidence = Number(support?.confidence ?? 0);
+        if (!support?.target) return;
+        if (!bestSupport || confidence > bestSupport.confidence) {
+          bestSupport = {
+            target: support.target,
+            confidence
+          };
+        }
+      });
+    });
+    return bestSupport;
   }
 
   async function generateInference(prompt) {
