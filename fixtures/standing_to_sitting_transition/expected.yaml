@@ -1,0 +1,43 @@
+schema_version: pose-contact-spec-0.1
+meta:
+  updated_at: 2024-01-01T00:00:00Z
+  extraction_mode: conservative
+  k: 5
+  allow_implied_objects: true
+  max_present_characters: 2
+agents:
+  - id: agent-jordan
+    name: Jordan
+    present: true
+    confidence: 0.9
+    salience_score: 0.8
+    posture:
+      value: seated
+      confidence: 0.8
+    anchors:
+      - name: body
+        contacts: []
+        supports:
+          - target: stool
+            confidence: 0.7
+objects:
+  - id: object-stool
+    name: stool
+    type: furniture
+    confidence: 0.7
+    salience_score: 0.5
+  - id: object-table
+    name: table
+    type: furniture
+    confidence: 0.6
+    salience_score: 0.4
+supports:
+  - source: agent-jordan
+    anchor: body
+    target: stool
+    confidence: 0.7
+contacts: []
+narrative_projection:
+  - text: Jordan sits on the stool beside the table.
+    confidence: 0.7
+conflicts: []

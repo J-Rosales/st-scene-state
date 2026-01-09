@@ -1,0 +1,38 @@
+schema_version: pose-contact-spec-0.1
+meta:
+  updated_at: 2024-01-01T00:00:00Z
+  extraction_mode: conservative
+  k: 6
+  allow_implied_objects: true
+  max_present_characters: 1
+agents:
+  - id: agent-omar
+    name: Omar
+    present: true
+    confidence: 0.9
+    salience_score: 0.9
+    posture:
+      value: seated
+      confidence: 0.8
+    anchors:
+      - name: body
+        contacts: []
+        supports:
+          - target: desk
+            confidence: 0.7
+objects:
+  - id: object-desk
+    name: desk
+    type: furniture
+    confidence: 0.7
+    salience_score: 0.5
+supports:
+  - source: agent-omar
+    anchor: body
+    target: desk
+    confidence: 0.7
+contacts: []
+narrative_projection:
+  - text: Omar sits at the desk and works.
+    confidence: 0.7
+conflicts: []

@@ -1,0 +1,49 @@
+schema_version: pose-contact-spec-0.1
+meta:
+  updated_at: 2024-01-01T00:00:00Z
+  extraction_mode: conservative
+  k: 4
+  allow_implied_objects: false
+  max_present_characters: 3
+agents:
+  - id: agent-alice
+    name: Alice
+    present: true
+    confidence: 0.9
+    salience_score: 0.7
+    anchors:
+      - name: hand
+        contacts:
+          - target: Bob
+            kind: handshake
+            confidence: 0.8
+        supports: []
+  - id: agent-bob
+    name: Bob
+    present: true
+    confidence: 0.9
+    salience_score: 0.7
+    anchors:
+      - name: hand
+        contacts:
+          - target: Alice
+            kind: handshake
+            confidence: 0.8
+        supports: []
+objects: []
+supports: []
+contacts:
+  - source: agent-alice
+    anchor: hand
+    target: Bob
+    kind: handshake
+    confidence: 0.8
+  - source: agent-bob
+    anchor: hand
+    target: Alice
+    kind: handshake
+    confidence: 0.8
+narrative_projection:
+  - text: Alice and Bob shake hands.
+    confidence: 0.8
+conflicts: []

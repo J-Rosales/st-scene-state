@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "title": "Conflicting posture in window",
+    "k": 4,
+    "allow_implied_objects": false,
+    "max_present_characters": 2
+  },
+  "messages": [
+    { "role": "user", "content": "Lena stands near the doorway." },
+    { "role": "assistant", "content": "Later, Lena sits on the bench." }
+  ]
+}

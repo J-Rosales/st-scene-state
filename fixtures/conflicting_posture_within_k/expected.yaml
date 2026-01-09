@@ -1,0 +1,41 @@
+schema_version: pose-contact-spec-0.1
+meta:
+  updated_at: 2024-01-01T00:00:00Z
+  extraction_mode: conservative
+  k: 4
+  allow_implied_objects: false
+  max_present_characters: 2
+agents:
+  - id: agent-lena
+    name: Lena
+    present: true
+    confidence: 0.9
+    salience_score: 0.8
+    posture:
+      value: seated
+      confidence: 0.7
+    anchors:
+      - name: body
+        contacts: []
+        supports:
+          - target: bench
+            confidence: 0.7
+objects:
+  - id: object-bench
+    name: bench
+    type: furniture
+    confidence: 0.7
+    salience_score: 0.4
+supports:
+  - source: agent-lena
+    anchor: body
+    target: bench
+    confidence: 0.7
+contacts: []
+narrative_projection:
+  - text: Lena sits on the bench.
+    confidence: 0.7
+conflicts:
+  - entity_id: agent-lena
+    note: Posture mentioned as standing then seated within window.
+    confidence: 0.5

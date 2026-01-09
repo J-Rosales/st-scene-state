@@ -1,0 +1,38 @@
+schema_version: pose-contact-spec-0.1
+meta:
+  updated_at: 2024-01-01T00:00:00Z
+  extraction_mode: conservative
+  k: 3
+  allow_implied_objects: true
+  max_present_characters: 2
+agents:
+  - id: agent-maya
+    name: Maya
+    present: true
+    confidence: 0.8
+    salience_score: 0.7
+    posture:
+      value: lying
+      confidence: 0.6
+    anchors:
+      - name: body
+        contacts: []
+        supports:
+          - target: floor
+            confidence: 0.4
+objects:
+  - id: object-floor
+    name: floor
+    type: surface
+    confidence: 0.4
+    salience_score: 0.3
+supports:
+  - source: agent-maya
+    anchor: body
+    target: floor
+    confidence: 0.4
+contacts: []
+narrative_projection:
+  - text: Maya lies down on the floor.
+    confidence: 0.5
+conflicts: []

@@ -1,0 +1,51 @@
+schema_version: pose-contact-spec-0.1
+meta:
+  updated_at: 2024-01-01T00:00:00Z
+  extraction_mode: conservative
+  k: 6
+  allow_implied_objects: true
+  max_present_characters: 2
+agents:
+  - id: agent-alex
+    name: Alex
+    present: true
+    confidence: 0.9
+    salience_score: 0.8
+    posture:
+      value: seated
+      confidence: 0.8
+    anchors:
+      - name: body
+        contacts:
+          - target: armrest
+            kind: touch
+            confidence: 0.6
+        supports:
+          - target: chair
+            confidence: 0.7
+objects:
+  - id: object-chair
+    name: chair
+    type: furniture
+    confidence: 0.8
+    salience_score: 0.6
+  - id: object-armrest
+    name: armrest
+    type: furniture_part
+    confidence: 0.6
+    salience_score: 0.4
+supports:
+  - source: agent-alex
+    anchor: body
+    target: chair
+    confidence: 0.7
+contacts:
+  - source: agent-alex
+    anchor: body
+    target: armrest
+    kind: touch
+    confidence: 0.6
+narrative_projection:
+  - text: Alex sits cross-legged on the chair and touches the armrest.
+    confidence: 0.7
+conflicts: []

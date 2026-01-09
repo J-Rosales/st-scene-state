@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pose Contact Spec",
+  "type": "object",
+  "properties": {
+    "schema_version": { "type": "string" },
+    "meta": { "type": "object" },
+    "agents": { "type": "array" },
+    "objects": { "type": "array" },
+    "supports": { "type": "array" },
+    "contacts": { "type": "array" },
+    "narrative_projection": { "type": "array" },
+    "conflicts": { "type": "array" }
+  },
+  "required": ["schema_version", "agents", "objects"]
+}
