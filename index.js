@@ -1271,13 +1271,15 @@
   }
 
   function getExtensionBaseUrl() {
-    if (window.SillyTavern?.getExtensionUrl) {
-      return window.SillyTavern.getExtensionUrl(EXTENSION_NAME);
-    }
-    if (typeof window.getExtensionUrl === "function") {
-      return window.getExtensionUrl(EXTENSION_NAME);
-    }
-    return `/extensions/${EXTENSION_NAME}`;
+  if (window.SillyTavern?.getExtensionUrl) {
+    return window.SillyTavern.getExtensionUrl(EXTENSION_NAME);
+  }
+  if (typeof window.getExtensionUrl === "function") {
+    return window.getExtensionUrl(EXTENSION_NAME);
+  }
+
+  // Correct fallback for older ST builds
+  return `/scripts/extensions/third-party/${EXTENSION_NAME}`;
   }
 
   async function loadSchemaManifest() {

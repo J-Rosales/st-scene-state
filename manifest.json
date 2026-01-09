@@ -1,11 +1,12 @@
 {
-  "name": "st-scene-state",
   "display_name": "Scene State",
+  "loading_order": 999,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "J-Rosales",
   "version": "0.1.0",
-  "author": "SillyTavern Extension",
-  "description": "Infer and maintain a per-chat physical scene snapshot from recent messages.",
-  "entry": "index.js",
-  "css": ["style.css"],
-  "settings_html": "",
-  "requires": []
+  "homePage": "https://github.com/J-Rosales/st-scene-state",
+  "auto_update": true
 }
