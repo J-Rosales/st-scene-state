@@ -40,9 +40,15 @@
       yaml: null,
       status: null,
       indicator: null,
+      cadence: null,
+      promptStatus: null,
       error: null,
       timestamp: null,
-      controls: {}
+      controls: {},
+      sections: {}
+    },
+    runtime: {
+      inferenceRunning: false
     }
   };
 
@@ -373,6 +379,8 @@
     normalizeSettingsToState(chatState);
     const messages = getChatMessages();
     const prompt = buildExtractionPrompt(messages, chatState);
+    state.runtime.inferenceRunning = true;
+    renderPanel();
 
     try {
       const result = await generateInference(prompt);
@@ -407,6 +415,7 @@
         console.warn(`[${EXTENSION_NAME}]`, message);
       }
     }
+    state.runtime.inferenceRunning = false;
     renderPanel();
   }
 
@@ -822,39 +831,59 @@
     panel.className = "st-scene-state-panel";
     panel.innerHTML = `
       <div class="st-scene-state-header">
-        <div class="st-scene-state-title">Scene State</div>
+        <div class="st-scene-state-title-group">
+          <div class="st-scene-state-title">Scene State</div>
+          <div class="st-scene-state-subtitle" data-role="prompt-status"></div>
+        </div>
         <div class="st-scene-state-status">
           <span class="st-scene-state-indicator" data-role="indicator"></span>
-          <span data-role="status">Disabled</span>
+          <span data-role="status">Idle</span>
         </div>
       </div>
       <div class="st-scene-state-meta">
-        <div class="st-scene-state-timestamp" data-role="timestamp"></div>
+        <div class="st-scene-state-meta-row">
+          <div class="st-scene-state-timestamp" data-role="timestamp"></div>
+          <div class="st-scene-state-cadence" data-role="cadence"></div>
+        </div>
         <div class="st-scene-state-error" data-role="error"></div>
       </div>
-      <div class="st-scene-state-narrative" data-role="narrative"></div>
-      <details class="st-scene-state-yaml">
-        <summary>Canonical YAML</summary>
-        <button class="st-scene-state-copy" data-role="copy">Copy YAML</button>
+      <details class="st-scene-state-section st-scene-state-narrative" data-role="narrative-section" open>
+        <summary>
+          <span>Narrative</span>
+          <button class="st-scene-state-copy" type="button" data-role="copy-narrative">Copy Narrative</button>
+        </summary>
+        <div class="st-scene-state-narrative-body" data-role="narrative"></div>
+      </details>
+      <details class="st-scene-state-section st-scene-state-yaml" data-role="yaml-section">
+        <summary>
+          <span>Canonical YAML</span>
+          <button class="st-scene-state-copy" type="button" data-role="copy-yaml">Copy YAML</button>
+        </summary>
         <pre data-role="yaml"></pre>
       </details>
       <div class="st-scene-state-controls">
-        <label>Context window (K)
+        <label title="How many recent messages to include in extraction.">
+          <span>Context window (K)</span>
           <input type="number" min="1" step="1" data-role="context-window" />
         </label>
-        <label>Update cadence (N)
+        <label title="Run extraction every N messages. Set to 0 for every message.">
+          <span>Update cadence (N)</span>
           <input type="number" min="0" step="1" data-role="update-cadence" />
         </label>
-        <label>Allow implied objects
+        <label title="Allow inferred baseline objects such as floor or wall.">
+          <span>Allow implied objects</span>
           <input type="checkbox" data-role="implied-objects" />
         </label>
-        <label>Max present characters
+        <label title="Maximum characters to keep in the present list.">
+          <span>Max present characters</span>
           <input type="number" min="1" step="1" data-role="max-characters" />
         </label>
-        <label>Inject summary into prompt
+        <label title="Inject the narrative summary into the prompt for continuity.">
+          <span>Inject summary into prompt</span>
           <input type="checkbox" data-role="inject-prompt" />
         </label>
-        <label>Only refresh on assistant messages
+        <label title="Experimental: only decrement the countdown on assistant responses.">
+          <span>Only refresh on assistant messages <span class="st-scene-state-badge">Advanced</span></span>
           <input type="checkbox" data-role="assistant-only" />
         </label>
         <div class="st-scene-state-buttons">
@@ -870,24 +899,54 @@
     if (!state.ui.panel) return;
     const chatState = getChatState();
     const settings = getExtensionSettings();
-    state.ui.status.textContent = settings.inject_prompt ? "Enabled" : "Disabled";
-    state.ui.indicator.classList.remove("is-error", "is-ok", "is-idle");
-    if (chatState?.last_error) {
-      state.ui.indicator.classList.add("is-error");
-    } else if (chatState?.snapshot_yaml) {
-      state.ui.indicator.classList.add("is-ok");
-    } else {
-      state.ui.indicator.classList.add("is-idle");
+    const conflictCount = chatState?.snapshot_obj?.conflicts?.length || 0;
+    const hasSnapshot = Boolean(chatState?.snapshot_yaml);
+    const hasError = Boolean(chatState?.last_error);
+    let statusLabel = "Idle";
+    let statusIcon = "•";
+    let statusClass = "is-idle";
+    if (hasError) {
+      statusLabel = "Error";
+      statusIcon = "✖";
+      statusClass = "is-error";
+    } else if (conflictCount > 0) {
+      statusLabel = "Warning";
+      statusIcon = "⚠";
+      statusClass = "is-warning";
+    } else if (hasSnapshot) {
+      statusLabel = "OK";
+      statusIcon = "✓";
+      statusClass = "is-ok";
     }
+    state.ui.status.textContent = `${statusIcon} ${statusLabel}`;
+    state.ui.indicator.classList.remove("is-error", "is-ok", "is-idle", "is-warning");
+    state.ui.indicator.classList.add(statusClass);
+    state.ui.promptStatus.textContent = settings.inject_prompt
+      ? "Prompt injection: On"
+      : "Prompt injection: Off";
     state.ui.timestamp.textContent = chatState?.updated_at_iso
       ? `Last updated: ${new Date(chatState.updated_at_iso).toLocaleString()}`
-      : "No snapshot yet";
-    state.ui.error.textContent = chatState?.last_error
-      ? `Last error: ${chatState.last_error}`
-      : "";
+      : "Last updated: never";
+    const assistantNote = settings.only_assistant_messages ? " (assistant-only)" : "";
+    if (settings.update_every_n_messages === 0) {
+      state.ui.cadence.textContent = `Auto: every message${assistantNote}`;
+    } else {
+      const remaining =
+        typeof chatState?.countdown_remaining === "number"
+          ? chatState.countdown_remaining
+          : settings.update_every_n_messages;
+      state.ui.cadence.textContent = `Auto: every ${settings.update_every_n_messages} msgs • next in ${remaining}${assistantNote}`;
+    }
+    state.ui.error.textContent = hasError ? `Last error: ${chatState.last_error}` : "";
     state.ui.yaml.textContent = chatState?.snapshot_yaml || "";
     state.ui.narrative.innerHTML = "";
     const narrativeLines = chatState?.narrative_lines || [];
+    if (narrativeLines.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "st-scene-state-empty";
+      empty.textContent = "No narrative snapshot yet. Run refresh to generate one.";
+      state.ui.narrative.appendChild(empty);
+    }
     narrativeLines.forEach((line) => {
       const p = document.createElement("div");
       p.textContent = line.text;
@@ -895,12 +954,22 @@
       p.style.opacity = String(alpha);
       state.ui.narrative.appendChild(p);
     });
+    if (!hasSnapshot) {
+      state.ui.yaml.textContent = "No canonical snapshot yet.";
+    }
     state.ui.controls.contextWindow.value = settings.context_window_k;
     state.ui.controls.updateCadence.value = settings.update_every_n_messages;
     state.ui.controls.impliedObjects.checked = settings.allow_implied_objects;
     state.ui.controls.maxCharacters.value = settings.max_present_characters;
     state.ui.controls.injectPrompt.checked = settings.inject_prompt;
     state.ui.controls.assistantOnly.checked = settings.only_assistant_messages;
+    state.ui.controls.refresh.disabled = state.runtime.inferenceRunning;
+    state.ui.controls.refresh.textContent = state.runtime.inferenceRunning
+      ? "Refreshing..."
+      : "Refresh Scene State";
+    const narrativeText = buildNarrativeCopyText(chatState);
+    state.ui.controls.copyNarrative.disabled = narrativeText.length === 0;
+    state.ui.controls.copyYaml.disabled = !chatState?.snapshot_yaml;
   }
 
   function wirePanelEvents() {
@@ -943,13 +1012,43 @@
     });
     controls.refresh.addEventListener("click", () => runInference({ manual: true }));
     controls.reset.addEventListener("click", resetChatState);
-    controls.copy.addEventListener("click", async () => {
+    controls.copyYaml.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       const text = state.ui.yaml.textContent || "";
       await navigator.clipboard.writeText(text);
-      controls.copy.textContent = "Copied";
+      controls.copyYaml.textContent = "Copied";
       setTimeout(() => {
-        controls.copy.textContent = "Copy YAML";
+        controls.copyYaml.textContent = "Copy YAML";
       }, 1500);
+    });
+    controls.copyNarrative.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const text = buildNarrativeCopyText(getChatState());
+      if (!text) return;
+      await navigator.clipboard.writeText(text);
+      controls.copyNarrative.textContent = "Copied";
+      setTimeout(() => {
+        controls.copyNarrative.textContent = "Copy Narrative";
+      }, 1500);
+    });
+  }
+
+  function buildNarrativeCopyText(chatState) {
+    const narrativeLines = chatState?.narrative_lines || [];
+    const cleaned = narrativeLines.map((line) => line.text).filter(Boolean);
+    return cleaned.join("\n").trim();
+  }
+
+  function applySessionToggle(details, key) {
+    if (!details || !key) return;
+    const stored = window.sessionStorage?.getItem(key);
+    if (stored !== null) {
+      details.open = stored === "true";
+    }
+    details.addEventListener("toggle", () => {
+      window.sessionStorage?.setItem(key, String(details.open));
     });
   }
 
@@ -978,9 +1077,15 @@
     state.ui.status = panel.querySelector("[data-role='status']");
     state.ui.indicator = panel.querySelector("[data-role='indicator']");
     state.ui.timestamp = panel.querySelector("[data-role='timestamp']");
+    state.ui.cadence = panel.querySelector("[data-role='cadence']");
+    state.ui.promptStatus = panel.querySelector("[data-role='prompt-status']");
     state.ui.error = panel.querySelector("[data-role='error']");
     state.ui.narrative = panel.querySelector("[data-role='narrative']");
     state.ui.yaml = panel.querySelector("[data-role='yaml']");
+    state.ui.sections = {
+      narrative: panel.querySelector("[data-role='narrative-section']"),
+      yaml: panel.querySelector("[data-role='yaml-section']")
+    };
     state.ui.controls = {
       contextWindow: panel.querySelector("[data-role='context-window']"),
       updateCadence: panel.querySelector("[data-role='update-cadence']"),
@@ -990,12 +1095,15 @@
       assistantOnly: panel.querySelector("[data-role='assistant-only']"),
       refresh: panel.querySelector("[data-role='refresh']"),
       reset: panel.querySelector("[data-role='reset']"),
-      copy: panel.querySelector("[data-role='copy']")
+      copyYaml: panel.querySelector("[data-role='copy-yaml']"),
+      copyNarrative: panel.querySelector("[data-role='copy-narrative']")
     };
     const settings = getExtensionSettings();
     if (settings.panel_open) {
       wrapper.classList.add("is-open");
     }
+    applySessionToggle(state.ui.sections.narrative, `${EXTENSION_NAME}-narrative-open`);
+    applySessionToggle(state.ui.sections.yaml, `${EXTENSION_NAME}-yaml-open`);
     wirePanelEvents();
     renderPanel();
   }
