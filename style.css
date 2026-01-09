@@ -2,12 +2,16 @@
   margin: 0.5rem 0;
   font-size: 0.9rem;
   font-family: var(--SmartThemeFontFamily, inherit);
+  --st-scene-state-surface: var(
+    --SmartThemeBackgroundColor,
+    var(--SmartThemeBodyColor, transparent)
+  );
 }
 
 .st-scene-state-toggle {
   width: 100%;
   border: 1px solid var(--SmartThemeBorderColor, currentColor);
-  background: var(--SmartThemeBodyColor, transparent);
+  background: var(--st-scene-state-surface);
   color: var(--SmartThemeTextColor, inherit);
   padding: 0.4rem 0.6rem;
   border-radius: 6px;
@@ -17,7 +21,7 @@
 .st-scene-state-panel {
   display: none;
   border: 1px solid var(--SmartThemeBorderColor, currentColor);
-  background: var(--SmartThemeBodyColor, transparent);
+  background: var(--st-scene-state-surface);
   color: var(--SmartThemeTextColor, inherit);
   padding: 0.7rem;
   border-radius: 8px;
@@ -126,7 +130,7 @@
 
 .st-scene-state-yaml pre {
   white-space: pre-wrap;
-  background: var(--SmartThemeBodyColor, transparent);
+  background: var(--st-scene-state-surface);
   padding: 0.5rem;
   border-radius: 6px;
   max-height: 220px;
@@ -148,7 +152,7 @@
   padding: 0.5rem;
   border-radius: 6px;
   border: 1px solid var(--SmartThemeBorderColor, currentColor);
-  background: var(--SmartThemeBodyColor, transparent);
+  background: var(--st-scene-state-surface);
   color: var(--SmartThemeTextColor, inherit);
   font-family: var(--SmartThemeFontFamily, inherit);
   font-size: 0.8rem;
@@ -165,7 +169,7 @@
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
   border: 1px solid var(--SmartThemeBorderColor, currentColor);
-  background: var(--SmartThemeBodyColor, transparent);
+  background: var(--st-scene-state-surface);
   color: var(--SmartThemeTextColor, inherit);
   cursor: pointer;
 }
@@ -180,7 +184,7 @@
   padding: 0.2rem 0.45rem;
   border-radius: 6px;
   border: 1px solid var(--SmartThemeBorderColor, currentColor);
-  background: var(--SmartThemeBodyColor, transparent);
+  background: var(--st-scene-state-surface);
   color: var(--SmartThemeTextColor, inherit);
   cursor: pointer;
   font-size: 0.75rem;
@@ -226,7 +230,7 @@
   padding: 0.3rem 0.4rem;
   border-radius: 6px;
   border: 1px solid var(--SmartThemeBorderColor, currentColor);
-  background: var(--SmartThemeBodyColor, transparent);
+  background: var(--st-scene-state-surface);
   color: var(--SmartThemeTextColor, inherit);
   cursor: pointer;
 }
@@ -252,7 +256,7 @@
   padding: 0.4rem;
   border-radius: 6px;
   border: 1px solid var(--SmartThemeBorderColor, currentColor);
-  background: var(--SmartThemeBodyColor, transparent);
+  background: var(--st-scene-state-surface);
 }
 
 .st-scene-state-character-name {
@@ -284,7 +288,7 @@
   padding: 0.3rem 0.4rem;
   border-radius: 6px;
   border: 1px solid var(--SmartThemeBorderColor, currentColor);
-  background: var(--SmartThemeBodyColor, transparent);
+  background: var(--st-scene-state-surface);
   color: var(--SmartThemeTextColor, inherit);
   cursor: pointer;
 }
@@ -301,7 +305,7 @@
   padding: 0.4rem;
   border-radius: 6px;
   border: 1px solid var(--SmartThemeBorderColor, currentColor);
-  background: var(--SmartThemeBodyColor, transparent);
+  background: var(--st-scene-state-surface);
   font-size: 0.75rem;
 }
 
