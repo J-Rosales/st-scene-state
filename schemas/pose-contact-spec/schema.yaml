@@ -1,0 +1,33 @@
+schema_version: pose-contact-spec-0.1
+description: >
+  Local, vendored snapshot of the pose-contact-spec inspired schema used by the
+  st-scene-state extension. This is a simplified subset for robust extraction.
+agents:
+  - id: string
+    name: string
+    present: boolean
+    confidence: number
+    salience_score: number
+    posture:
+      value: string
+      confidence: number
+    anchors:
+      - name: string
+        contacts:
+          - target: string
+            kind: string
+            confidence: number
+        supports:
+          - target: string
+            confidence: number
+objects:
+  - id: string
+    name: string
+    type: string
+    confidence: number
+narrative_projection:
+  - text: string
+    confidence: number
+conflict_notes:
+  - text: string
+    confidence: number

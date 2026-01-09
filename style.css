@@ -1,0 +1,145 @@
+.st-scene-state-container {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.st-scene-state-toggle {
+  width: 100%;
+  border: 1px solid var(--SmartThemeBorderColor, #555);
+  background: var(--SmartThemeBodyColor, #222);
+  color: var(--SmartThemeTextColor, #fff);
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.st-scene-state-panel {
+  display: none;
+  border: 1px solid var(--SmartThemeBorderColor, #555);
+  background: var(--SmartThemeBodyColor, #1b1b1b);
+  color: var(--SmartThemeTextColor, #fff);
+  padding: 0.6rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+.st-scene-state-container.is-open .st-scene-state-panel {
+  display: block;
+}
+
+.st-scene-state-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.st-scene-state-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.st-scene-state-indicator {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--SmartThemeBorderColor, #666);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+}
+
+.st-scene-state-indicator.is-ok {
+  background: var(--SmartThemeAccent, #3cb371);
+}
+
+.st-scene-state-indicator.is-error {
+  background: var(--SmartThemeWarningColor, #ff6b6b);
+}
+
+.st-scene-state-indicator.is-idle {
+  background: var(--SmartThemeBorderColor, #666);
+}
+
+.st-scene-state-meta {
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.st-scene-state-error {
+  color: var(--SmartThemeWarningColor, #ffb347);
+  margin-top: 0.2rem;
+}
+
+.st-scene-state-narrative {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.st-scene-state-yaml {
+  margin-top: 0.6rem;
+}
+
+.st-scene-state-yaml pre {
+  white-space: pre-wrap;
+  background: var(--SmartThemeInputBackground, #111);
+  padding: 0.5rem;
+  border-radius: 6px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.st-scene-state-copy {
+  margin: 0.4rem 0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--SmartThemeBorderColor, #555);
+  background: var(--SmartThemeBodyColor, #222);
+  color: var(--SmartThemeTextColor, #fff);
+  cursor: pointer;
+}
+
+.st-scene-state-controls {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.st-scene-state-controls label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.st-scene-state-controls input[type="number"] {
+  width: 4.5rem;
+  padding: 0.2rem;
+  border-radius: 4px;
+  border: 1px solid var(--SmartThemeBorderColor, #555);
+  background: var(--SmartThemeInputBackground, #111);
+  color: var(--SmartThemeTextColor, #fff);
+}
+
+.st-scene-state-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.st-scene-state-buttons button {
+  flex: 1;
+  padding: 0.3rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--SmartThemeBorderColor, #555);
+  background: var(--SmartThemeBodyColor, #222);
+  color: var(--SmartThemeTextColor, #fff);
+  cursor: pointer;
+}
