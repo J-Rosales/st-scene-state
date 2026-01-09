@@ -1,0 +1,11 @@
+{
+  "name": "st-scene-state",
+  "display_name": "Scene State",
+  "version": "0.1.0",
+  "author": "SillyTavern Extension",
+  "description": "Infer and maintain a per-chat physical scene snapshot from recent messages.",
+  "entry": "index.js",
+  "css": ["style.css"],
+  "settings_html": "",
+  "requires": []
+}
