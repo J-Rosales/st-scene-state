@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "title": "Cross-legged on chair",
+    "k": 6,
+    "allow_implied_objects": true,
+    "max_present_characters": 2
+  },
+  "messages": [
+    { "role": "user", "content": "Alex sits cross-legged on the chair and rests a hand on the armrest." },
+    { "role": "assistant", "content": "Alex stays seated, leaning into the chair's armrest." }
+  ]
+}

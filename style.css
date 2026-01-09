@@ -135,6 +135,47 @@
   border: 1px solid var(--SmartThemeBorderColor, currentColor);
 }
 
+.st-scene-state-inline-actions {
+  display: inline-flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.st-scene-state-yaml-editor {
+  width: 100%;
+  min-height: 200px;
+  margin-top: 0.4rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--SmartThemeBorderColor, currentColor);
+  background: var(--SmartThemeBodyColor, transparent);
+  color: var(--SmartThemeTextColor, inherit);
+  font-family: var(--SmartThemeFontFamily, inherit);
+  font-size: 0.8rem;
+  display: none;
+}
+
+.st-scene-state-yaml-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.st-scene-state-yaml-actions button {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--SmartThemeBorderColor, currentColor);
+  background: var(--SmartThemeBodyColor, transparent);
+  color: var(--SmartThemeTextColor, inherit);
+  cursor: pointer;
+}
+
+.st-scene-state-warning {
+  font-size: 0.75rem;
+  color: var(--SmartThemeWarningColor, currentColor);
+  margin-top: 0.3rem;
+}
+
 .st-scene-state-copy {
   padding: 0.2rem 0.45rem;
   border-radius: 6px;
@@ -169,6 +210,11 @@
   color: var(--SmartThemeTextColor, inherit);
 }
 
+.st-scene-state-controls select,
+.st-scene-state-controls input[type="checkbox"] {
+  accent-color: var(--SmartThemeAccent, currentColor);
+}
+
 .st-scene-state-buttons {
   display: flex;
   gap: 0.5rem;
@@ -190,6 +236,73 @@
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+}
+
+.st-scene-state-character-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.st-scene-state-character-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--SmartThemeBorderColor, currentColor);
+  background: var(--SmartThemeBodyColor, transparent);
+}
+
+.st-scene-state-character-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.st-scene-state-character-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.st-scene-state-lock-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.st-scene-state-dev-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.st-scene-state-dev-controls button {
+  flex: 1;
+  padding: 0.3rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--SmartThemeBorderColor, currentColor);
+  background: var(--SmartThemeBodyColor, transparent);
+  color: var(--SmartThemeTextColor, inherit);
+  cursor: pointer;
+}
+
+.st-scene-state-dev-status {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.st-scene-state-dev-report {
+  margin-top: 0.4rem;
+  max-height: 200px;
+  overflow: auto;
+  padding: 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--SmartThemeBorderColor, currentColor);
+  background: var(--SmartThemeBodyColor, transparent);
+  font-size: 0.75rem;
 }
 
 .st-scene-state-empty {

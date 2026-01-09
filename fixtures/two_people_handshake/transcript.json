@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "title": "Two people handshake",
+    "k": 4,
+    "allow_implied_objects": false,
+    "max_present_characters": 3
+  },
+  "messages": [
+    { "role": "user", "content": "Alice and Bob meet." },
+    { "role": "assistant", "content": "Alice shakes Bob's hand warmly." }
+  ]
+}

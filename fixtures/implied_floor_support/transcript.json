@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "title": "Implied floor support",
+    "k": 3,
+    "allow_implied_objects": true,
+    "max_present_characters": 2
+  },
+  "messages": [
+    { "role": "user", "content": "Maya lies down to rest." }
+  ]
+}

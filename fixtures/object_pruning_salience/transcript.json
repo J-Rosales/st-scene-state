@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "title": "Prune by salience",
+    "k": 6,
+    "allow_implied_objects": true,
+    "max_present_characters": 1
+  },
+  "messages": [
+    { "role": "user", "content": "Nia and Omar enter the room." },
+    { "role": "assistant", "content": "Omar sits at the desk and types." },
+    { "role": "assistant", "content": "Omar keeps working at the desk." }
+  ]
+}
