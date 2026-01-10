@@ -4,9 +4,22 @@
   font-size: 0.9rem;
   font-family: var(--SmartThemeFontFamily, inherit);
   --st-scene-state-surface: var(
-    --SmartThemeBackgroundColor,
-    var(--SmartThemeBodyColor, transparent)
+    --SmartThemeChatTintColor,
+    var(
+      --SmartThemeBlurTintColor,
+      var(--SmartThemeBodyColor, transparent)
+    )
   );
+}
+
+.st-scene-state-toggle {
+  width: 100%;
+  border: 1px solid var(--SmartThemeBorderColor, currentColor);
+  background: var(--st-scene-state-surface);
+  color: var(--SmartThemeTextColor, inherit);
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 .st-scene-state-panel {
