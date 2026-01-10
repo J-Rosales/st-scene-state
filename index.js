@@ -64,6 +64,7 @@
       panel: null,
       panelWrapper: null,
       panelToggle: null,
+      settingsBlock: null,
       narrative: null,
       yaml: null,
       yamlEditor: null,
@@ -85,7 +86,8 @@
       inferenceRunning: false,
       yamlEditMode: false,
       yamlDraft: "",
-      lastFixtureReport: null
+      lastFixtureReport: null,
+      settingsObserver: null
     }
   };
 
@@ -1497,6 +1499,54 @@
     return wrapper;
   }
 
+  function locateExtensionSettingsHost() {
+    return (
+      document.querySelector("#extensions_settings") ||
+      document.querySelector("#extensions_settings2") ||
+      document.querySelector("#extensionsMenu")
+    );
+  }
+
+  function ensureExtensionSettingsBlock() {
+    if (state.ui.settingsBlock) return true;
+    const existing = document.querySelector(".st-scene-state-extension-settings");
+    if (existing) {
+      state.ui.settingsBlock = existing;
+      const panelToggle = existing.querySelector("[data-role='panel-open']");
+      if (panelToggle) {
+        state.ui.panelToggle = panelToggle;
+      }
+      return true;
+    }
+    const extensionSettingsHost = locateExtensionSettingsHost();
+    if (!extensionSettingsHost) return false;
+    const settingsBlock = buildExtensionSettings();
+    extensionSettingsHost.appendChild(settingsBlock);
+    const panelToggle = settingsBlock.querySelector("[data-role='panel-open']");
+    panelToggle?.addEventListener("change", (event) => {
+      const nextSettings = getExtensionSettings();
+      nextSettings.panel_open = Boolean(event.target.checked);
+      saveSettings();
+      applyPanelState();
+    });
+    state.ui.panelToggle = panelToggle;
+    state.ui.settingsBlock = settingsBlock;
+    return true;
+  }
+
+  function observeExtensionSettingsHost() {
+    if (state.runtime.settingsObserver) return;
+    if (ensureExtensionSettingsBlock()) return;
+    const observer = new MutationObserver(() => {
+      if (ensureExtensionSettingsBlock()) {
+        observer.disconnect();
+        state.runtime.settingsObserver = null;
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    state.runtime.settingsObserver = observer;
+  }
+
   function applyPanelState() {
     if (!state.ui.panelWrapper) return;
     const settings = getExtensionSettings();
@@ -2053,22 +2103,7 @@
       applyPanelState();
       renderPanel();
     });
-    const extensionSettingsHost =
-      document.querySelector("#extensions_settings") ||
-      document.querySelector("#extensions_settings2") ||
-      document.querySelector("#extensionsMenu");
-    if (extensionSettingsHost && !document.querySelector(".st-scene-state-extension-settings")) {
-      const settingsBlock = buildExtensionSettings();
-      extensionSettingsHost.appendChild(settingsBlock);
-      const panelToggle = settingsBlock.querySelector("[data-role='panel-open']");
-      panelToggle?.addEventListener("change", (event) => {
-        const nextSettings = getExtensionSettings();
-        nextSettings.panel_open = Boolean(event.target.checked);
-        saveSettings();
-        applyPanelState();
-      });
-      state.ui.panelToggle = panelToggle;
-    }
+    ensureExtensionSettingsBlock();
     const closeButton = wrapper.querySelector(".floating_panel_close");
     closeButton?.addEventListener("click", () => {
       wrapper.classList.remove("is-open");
@@ -2135,6 +2170,7 @@
 
   async function init() {
     mountPanel();
+    observeExtensionSettingsHost();
     registerMessageHooks();
     registerPromptInjection();
     const manifest = await loadSchemaManifest();
