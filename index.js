@@ -1459,7 +1459,7 @@
 
   function buildFloatingPanel() {
     const wrapper = document.createElement("div");
-    wrapper.className = "drawer-content st-scene-state-floating";
+    wrapper.className = "drawer-content fillRight st-scene-state-floating closedDrawer";
     wrapper.id = "st-scene-state-floating-panel";
     const controlBar = document.createElement("div");
     controlBar.className = "panelControlBar flex-container alignItemsBaseline";
@@ -1477,6 +1477,36 @@
     wrapper.appendChild(controlBar);
     wrapper.appendChild(body);
     return { wrapper, panel };
+  }
+
+  function buildExtensionSettings() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "inline-drawer wide100p st-scene-state-extension-settings";
+    wrapper.innerHTML = `
+      <div class="inline-drawer-toggle inline-drawer-header">
+        <b>Scene State</b>
+        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+      </div>
+      <div class="inline-drawer-content">
+        <label class="checkbox_label">
+          <input type="checkbox" data-role="panel-open" />
+          <span>Show floating panel</span>
+        </label>
+      </div>
+    `;
+    return wrapper;
+  }
+
+  function applyPanelState() {
+    if (!state.ui.panelWrapper) return;
+    const settings = getExtensionSettings();
+    if (settings.panel_open) {
+      state.ui.panelWrapper.classList.add("openDrawer");
+      state.ui.panelWrapper.classList.remove("closedDrawer");
+    } else {
+      state.ui.panelWrapper.classList.remove("openDrawer");
+      state.ui.panelWrapper.classList.add("closedDrawer");
+    }
   }
 
   function renderCharacters(chatState) {
@@ -1653,6 +1683,10 @@
     state.ui.sections.developer.style.display = settings.developer_mode ? "block" : "none";
     state.ui.controls.openFixtureReport.disabled = !settings.last_fixture_report;
     state.ui.devReport.textContent = settings.last_fixture_report || "";
+    if (state.ui.panelToggle instanceof HTMLInputElement) {
+      state.ui.panelToggle.checked = settings.panel_open;
+    }
+    applyPanelState();
     renderCharacters(chatState);
   }
 
@@ -2010,9 +2044,30 @@
       openFixtureReport: panel.querySelector("[data-role='open-fixture-report']"),
       characters: panel.querySelector("[data-role='characters']")
     };
-    const settings = getExtensionSettings();
-    if (settings.panel_open) {
-      wrapper.classList.add("is-open");
+    applyPanelState();
+    const closeButton = wrapper.querySelector(".floating_panel_close");
+    closeButton?.addEventListener("click", () => {
+      const nextSettings = getExtensionSettings();
+      nextSettings.panel_open = false;
+      saveSettings();
+      applyPanelState();
+      renderPanel();
+    });
+    const extensionSettingsHost =
+      document.querySelector("#extensions_settings") ||
+      document.querySelector("#extensions_settings2") ||
+      document.querySelector("#extensionsMenu");
+    if (extensionSettingsHost && !document.querySelector(".st-scene-state-extension-settings")) {
+      const settingsBlock = buildExtensionSettings();
+      extensionSettingsHost.appendChild(settingsBlock);
+      const panelToggle = settingsBlock.querySelector("[data-role='panel-open']");
+      panelToggle?.addEventListener("change", (event) => {
+        const nextSettings = getExtensionSettings();
+        nextSettings.panel_open = Boolean(event.target.checked);
+        saveSettings();
+        applyPanelState();
+      });
+      state.ui.panelToggle = panelToggle;
     }
     const closeButton = wrapper.querySelector(".floating_panel_close");
     closeButton?.addEventListener("click", () => {
