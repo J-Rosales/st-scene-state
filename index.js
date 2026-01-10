@@ -1522,6 +1522,10 @@
         </div>
         <div class="st-scene-state-error" data-role="error"></div>
       </div>
+      <div class="st-scene-state-buttons st-scene-state-panel-actions">
+        <button data-role="refresh">Refresh Scene State</button>
+        <button data-role="reset">Reset Scene State</button>
+      </div>
       <details class="st-scene-state-section st-scene-state-narrative" data-role="narrative-section" open>
         <summary>
           <span>Narrative</span>
@@ -1637,10 +1641,6 @@
             <span>Developer mode</span>
             <input type="checkbox" data-role="developer-mode" />
           </label>
-          <div class="st-scene-state-buttons">
-            <button data-role="refresh">Refresh Scene State</button>
-            <button data-role="reset">Reset Scene State</button>
-          </div>
         </div>
       </details>
       <details class="st-scene-state-section st-scene-state-developer" data-role="developer-section">
