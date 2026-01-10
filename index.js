@@ -425,6 +425,48 @@
     return window.SillyTavern?.eventTypes || window.event_types;
   }
 
+  function getLlmConnectionStatus() {
+    const context = getContextSafe();
+    const candidates = [
+      context?.connection,
+      context?.connectionProfile,
+      context?.settings?.connection,
+      window.SillyTavern?.connection,
+      window.connection
+    ].filter(Boolean);
+    const normalizeStatus = (value) => String(value || "").toLowerCase();
+    for (const candidate of candidates) {
+      if (typeof candidate.connected === "boolean") {
+        return { known: true, connected: candidate.connected };
+      }
+      if (typeof candidate.isConnected === "boolean") {
+        return { known: true, connected: candidate.isConnected };
+      }
+      if (typeof candidate.valid === "boolean") {
+        return { known: true, connected: candidate.valid };
+      }
+      if (typeof candidate.active === "boolean") {
+        return { known: true, connected: candidate.active };
+      }
+      const statusString = normalizeStatus(candidate.status || candidate.state);
+      if (statusString) {
+        if (["connected", "valid", "ready", "ok"].includes(statusString)) {
+          return { known: true, connected: true };
+        }
+        if (["disconnected", "invalid", "error", "offline"].includes(statusString)) {
+          return { known: true, connected: false };
+        }
+      }
+      if (typeof candidate.status?.connected === "boolean") {
+        return { known: true, connected: candidate.status.connected };
+      }
+      if (typeof candidate.state?.connected === "boolean") {
+        return { known: true, connected: candidate.state.connected };
+      }
+    }
+    return { known: false, connected: true };
+  }
+
   function getChatMessages() {
     const context = getContextSafe();
     if (!context?.chat) return [];
@@ -1219,6 +1261,19 @@
     const chatState = getChatState();
     if (!chatState) return;
     normalizeSettingsToState(chatState);
+    const connectionStatus = getLlmConnectionStatus();
+    if (connectionStatus.known && !connectionStatus.connected) {
+      const message = "No active LLM connection. Connect a profile and try again.";
+      persistChatState({
+        last_error: message,
+        last_success: null
+      });
+      if (manual) {
+        console.warn(`[${EXTENSION_NAME}]`, message);
+      }
+      renderPanel();
+      return;
+    }
     const messages = getChatMessages();
     state.runtime.inferenceRunning = true;
     renderPanel();
@@ -1775,10 +1830,16 @@
     state.ui.controls.injectPrompt.checked = settings.inject_prompt;
     state.ui.controls.assistantOnly.checked = settings.only_assistant_messages;
     state.ui.controls.developerMode.checked = settings.developer_mode;
-    state.ui.controls.refresh.disabled = state.runtime.inferenceRunning;
-    state.ui.controls.refresh.textContent = state.runtime.inferenceRunning
-      ? "Refreshing..."
-      : "Refresh Scene State";
+    const connectionStatus = getLlmConnectionStatus();
+    const hasConnection = !connectionStatus.known || connectionStatus.connected;
+    state.ui.controls.refresh.disabled = state.runtime.inferenceRunning || !hasConnection;
+    if (state.runtime.inferenceRunning) {
+      state.ui.controls.refresh.textContent = "Refreshing...";
+    } else if (!hasConnection) {
+      state.ui.controls.refresh.textContent = "Connect to Refresh";
+    } else {
+      state.ui.controls.refresh.textContent = "Refresh Scene State";
+    }
     const narrativeText = buildNarrativeCopyText(chatState);
     state.ui.controls.copyNarrative.disabled = narrativeText.length === 0;
     state.ui.controls.copyYaml.disabled = !chatState?.snapshot_yaml;
