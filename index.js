@@ -669,7 +669,8 @@
 
   function buildEntityLookup(entities) {
     const lookup = new Map();
-    (entities || []).forEach((entity) => {
+    const list = Array.isArray(entities) ? entities : [];
+    list.forEach((entity) => {
       const key = normalizeEntityName(entity?.name);
       if (!key) return;
       if (!lookup.has(key)) lookup.set(key, []);
@@ -707,11 +708,11 @@
   }
 
   function applyContinuity(snapshotObj, previousObj) {
-    const previousAgents = previousObj?.agents;
-    const previousObjects = previousObj?.objects;
+    const previousAgents = Array.isArray(previousObj?.agents) ? previousObj.agents : [];
+    const previousObjects = Array.isArray(previousObj?.objects) ? previousObj.objects : [];
     if (snapshotObj?.agents && Array.isArray(snapshotObj.agents)) {
       const priorByName = buildEntityLookup(previousAgents);
-      const priorBySalience = [...(previousAgents || [])].sort(compareBySalienceThenName);
+      const priorBySalience = [...previousAgents].sort(compareBySalienceThenName);
       snapshotObj.agents.forEach((agent, index) => {
         if (!agent) return;
         const name = normalizeEntityName(agent.name);
@@ -728,7 +729,7 @@
     }
     if (snapshotObj?.objects && Array.isArray(snapshotObj.objects)) {
       const priorByName = buildEntityLookup(previousObjects);
-      const priorBySalience = [...(previousObjects || [])].sort(compareBySalienceThenName);
+      const priorBySalience = [...previousObjects].sort(compareBySalienceThenName);
       snapshotObj.objects.forEach((object, index) => {
         if (!object) return;
         const name = normalizeEntityName(object.name);
