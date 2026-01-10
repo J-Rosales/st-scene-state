@@ -2104,8 +2104,8 @@
       renderPanel();
     });
     ensureExtensionSettingsBlock();
-    const closeButton = wrapper.querySelector(".floating_panel_close");
-    closeButton?.addEventListener("click", () => {
+    const closeButtonMenu = wrapper.querySelector(".floating_panel_close");
+    closeButtonMenu?.addEventListener("click", () => {
       wrapper.classList.remove("is-open");
       const nextSettings = getExtensionSettings();
       nextSettings.panel_open = false;
