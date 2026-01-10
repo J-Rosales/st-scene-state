@@ -138,6 +138,21 @@
   display: none;
 }
 
+.st-scene-state-toggle-icon {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.st-scene-state-toggle-icon::before {
+  content: "▾";
+}
+
+.st-scene-state-section[open] .st-scene-state-toggle-icon::before {
+  content: "▴";
+}
+
 .st-scene-state-yaml pre {
   white-space: pre-wrap;
   background: var(--st-scene-state-surface);
@@ -153,6 +168,10 @@
   display: inline-flex;
   gap: 0.3rem;
   flex-wrap: wrap;
+}
+
+.st-scene-state-section-actions {
+  margin-top: 0.4rem;
 }
 
 .st-scene-state-yaml-editor {
@@ -226,6 +245,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+}
+
+.st-scene-state-settings .st-scene-state-controls {
+  margin-top: 0.4rem;
 }
 
 .st-scene-state-controls label {

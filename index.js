@@ -1521,23 +1521,24 @@
       <details class="st-scene-state-section st-scene-state-yaml" data-role="yaml-section">
         <summary>
           <span>Canonical Output</span>
-          <div class="st-scene-state-inline-actions">
-            <button class="st-scene-state-copy st-scene-state-icon-button" type="button" data-role="copy-yaml">
-              <i class="fa-solid fa-copy"></i>
-              <span class="st-scene-state-smallcaps">YAML</span>
-            </button>
-            <button class="st-scene-state-copy st-scene-state-icon-button" type="button" data-role="download-yaml">
-              <i class="fa-solid fa-floppy-disk"></i>
-              <span class="st-scene-state-action-join">+</span>
-              <span class="st-scene-state-smallcaps">YAML</span>
-            </button>
-            <button class="st-scene-state-copy st-scene-state-icon-button" type="button" data-role="copy-json">
-              <i class="fa-solid fa-copy"></i>
-              <span class="st-scene-state-smallcaps">JSON</span>
-            </button>
-            <button class="st-scene-state-copy" type="button" data-role="edit-yaml">Edit</button>
-          </div>
+          <span class="st-scene-state-toggle-icon" aria-hidden="true"></span>
         </summary>
+        <div class="st-scene-state-section-actions st-scene-state-inline-actions">
+          <button class="st-scene-state-copy st-scene-state-icon-button" type="button" data-role="copy-yaml">
+            <i class="fa-solid fa-copy"></i>
+            <span class="st-scene-state-smallcaps">YAML</span>
+          </button>
+          <button class="st-scene-state-copy st-scene-state-icon-button" type="button" data-role="download-yaml">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span class="st-scene-state-action-join">+</span>
+            <span class="st-scene-state-smallcaps">YAML</span>
+          </button>
+          <button class="st-scene-state-copy st-scene-state-icon-button" type="button" data-role="copy-json">
+            <i class="fa-solid fa-copy"></i>
+            <span class="st-scene-state-smallcaps">JSON</span>
+          </button>
+          <button class="st-scene-state-copy" type="button" data-role="edit-yaml">Edit</button>
+        </div>
         <div class="st-scene-state-warning" data-role="yaml-warning"></div>
         <pre data-role="yaml"></pre>
         <textarea class="st-scene-state-yaml-editor" data-role="yaml-editor"></textarea>
@@ -1550,80 +1551,87 @@
       <details class="st-scene-state-section st-scene-state-characters" data-role="characters-section">
         <summary>
           <span>Characters</span>
+          <span class="st-scene-state-toggle-icon" aria-hidden="true"></span>
         </summary>
         <div class="st-scene-state-character-list" data-role="characters"></div>
       </details>
-      <div class="st-scene-state-controls">
-        <label title="How many recent messages to include in extraction.">
-          <span>Context window (K)</span>
-          <input type="number" min="1" step="1" data-role="context-window" />
-        </label>
-        <label title="Run extraction every N messages. Set to 0 for every message.">
-          <span>Update cadence (N)</span>
-          <input type="number" min="0" step="1" data-role="update-cadence" />
-        </label>
-        <label title="Allow inferred baseline objects such as floor or wall.">
-          <span>Allow implied objects</span>
-          <input type="checkbox" data-role="implied-objects" />
-        </label>
-        <label title="Extraction mode controls strictness.">
-          <span>Extraction mode</span>
-          <select data-role="extraction-mode">
-            <option value="conservative">Conservative</option>
-            <option value="descriptive">Descriptive</option>
-          </select>
-        </label>
-        <label title="Maximum characters to keep in the present list.">
-          <span>Max present characters</span>
-          <input type="number" min="1" step="1" data-role="max-characters" />
-        </label>
-        <label title="Limit per-message input size.">
-          <span>Max chars per message</span>
-          <input type="number" min="200" step="100" data-role="max-chars-message" />
-        </label>
-        <label title="Limit total characters across the extraction window.">
-          <span>Max total chars</span>
-          <input type="number" min="1000" step="500" data-role="max-total-chars" />
-        </label>
-        <label title="Strip fenced code blocks from input.">
-          <span>Strip code blocks</span>
-          <input type="checkbox" data-role="strip-code" />
-        </label>
-        <label title="Strip quoted blocks from input.">
-          <span>Strip quoted blocks</span>
-          <input type="checkbox" data-role="strip-quotes" />
-        </label>
-        <label title="Prompt profile for multi-model robustness.">
-          <span>Prompt profile</span>
-          <select data-role="prompt-profile">
-            <option value="auto">Auto</option>
-            <option value="openai">OpenAI</option>
-            <option value="anthropic">Anthropic</option>
-            <option value="google">Google</option>
-            <option value="generic">Generic</option>
-          </select>
-        </label>
-        <label title="Maximum model output size before triggering fallback.">
-          <span>Max output chars</span>
-          <input type="number" min="2000" step="500" data-role="max-output-chars" />
-        </label>
-        <label title="Inject the narrative summary into the prompt for continuity.">
-          <span>Inject summary into prompt</span>
-          <input type="checkbox" data-role="inject-prompt" />
-        </label>
-        <label title="Experimental: only decrement the countdown on assistant responses.">
-          <span>Only refresh on assistant messages <span class="st-scene-state-badge">Advanced</span></span>
-          <input type="checkbox" data-role="assistant-only" />
-        </label>
-        <label title="Enable developer tools (fixtures, reports).">
-          <span>Developer mode</span>
-          <input type="checkbox" data-role="developer-mode" />
-        </label>
-        <div class="st-scene-state-buttons">
-          <button data-role="refresh">Refresh Scene State</button>
-          <button data-role="reset">Reset Scene State</button>
+      <details class="st-scene-state-section st-scene-state-settings" data-role="settings-section" open>
+        <summary>
+          <span>Settings</span>
+          <span class="st-scene-state-toggle-icon" aria-hidden="true"></span>
+        </summary>
+        <div class="st-scene-state-controls">
+          <label title="How many recent messages to include in extraction.">
+            <span>Context window (K)</span>
+            <input type="number" min="1" step="1" data-role="context-window" />
+          </label>
+          <label title="Run extraction every N messages. Set to 0 for every message.">
+            <span>Update cadence (N)</span>
+            <input type="number" min="0" step="1" data-role="update-cadence" />
+          </label>
+          <label title="Allow inferred baseline objects such as floor or wall.">
+            <span>Allow implied objects</span>
+            <input type="checkbox" data-role="implied-objects" />
+          </label>
+          <label title="Extraction mode controls strictness.">
+            <span>Extraction mode</span>
+            <select data-role="extraction-mode">
+              <option value="conservative">Conservative</option>
+              <option value="descriptive">Descriptive</option>
+            </select>
+          </label>
+          <label title="Maximum characters to keep in the present list.">
+            <span>Max present characters</span>
+            <input type="number" min="1" step="1" data-role="max-characters" />
+          </label>
+          <label title="Limit per-message input size.">
+            <span>Max chars per message</span>
+            <input type="number" min="200" step="100" data-role="max-chars-message" />
+          </label>
+          <label title="Limit total characters across the extraction window.">
+            <span>Max total chars</span>
+            <input type="number" min="1000" step="500" data-role="max-total-chars" />
+          </label>
+          <label title="Strip fenced code blocks from input.">
+            <span>Strip code blocks</span>
+            <input type="checkbox" data-role="strip-code" />
+          </label>
+          <label title="Strip quoted blocks from input.">
+            <span>Strip quoted blocks</span>
+            <input type="checkbox" data-role="strip-quotes" />
+          </label>
+          <label title="Prompt profile for multi-model robustness.">
+            <span>Prompt profile</span>
+            <select data-role="prompt-profile">
+              <option value="auto">Auto</option>
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic</option>
+              <option value="google">Google</option>
+              <option value="generic">Generic</option>
+            </select>
+          </label>
+          <label title="Maximum model output size before triggering fallback.">
+            <span>Max output chars</span>
+            <input type="number" min="2000" step="500" data-role="max-output-chars" />
+          </label>
+          <label title="Inject the narrative summary into the prompt for continuity.">
+            <span>Inject summary into prompt</span>
+            <input type="checkbox" data-role="inject-prompt" />
+          </label>
+          <label title="Experimental: only decrement the countdown on assistant responses.">
+            <span>Only refresh on assistant messages <span class="st-scene-state-badge">Advanced</span></span>
+            <input type="checkbox" data-role="assistant-only" />
+          </label>
+          <label title="Enable developer tools (fixtures, reports).">
+            <span>Developer mode</span>
+            <input type="checkbox" data-role="developer-mode" />
+          </label>
+          <div class="st-scene-state-buttons">
+            <button data-role="refresh">Refresh Scene State</button>
+            <button data-role="reset">Reset Scene State</button>
+          </div>
         </div>
-      </div>
+      </details>
       <details class="st-scene-state-section st-scene-state-developer" data-role="developer-section">
         <summary>
           <span>Developer</span>
@@ -2272,6 +2280,7 @@
       narrative: panel.querySelector("[data-role='narrative-section']"),
       yaml: panel.querySelector("[data-role='yaml-section']"),
       characters: panel.querySelector("[data-role='characters-section']"),
+      settings: panel.querySelector("[data-role='settings-section']"),
       developer: panel.querySelector("[data-role='developer-section']")
     };
     state.ui.controls = {
@@ -2339,6 +2348,7 @@
     applySessionToggle(state.ui.sections.narrative, `${EXTENSION_NAME}-narrative-open`);
     applySessionToggle(state.ui.sections.yaml, `${EXTENSION_NAME}-yaml-open`);
     applySessionToggle(state.ui.sections.characters, `${EXTENSION_NAME}-characters-open`);
+    applySessionToggle(state.ui.sections.settings, `${EXTENSION_NAME}-settings-open`);
     applySessionToggle(state.ui.sections.developer, `${EXTENSION_NAME}-developer-open`);
     wirePanelEvents();
     renderPanel();
