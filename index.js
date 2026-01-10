@@ -2042,7 +2042,7 @@
   function mountPanel() {
     if (state.ui.panel) return;
     const { wrapper, panel } = buildFloatingPanel();
-    const host = document.querySelector("#movingDivs") || document.body;
+    const host = document.body;
     host.appendChild(wrapper);
     state.ui.panel = panel;
     state.ui.panelWrapper = wrapper;
