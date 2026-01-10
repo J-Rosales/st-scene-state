@@ -693,22 +693,33 @@
     return narrativeLines;
   }
 
+  async function invokeQuietPrompt(generator, prompt, options) {
+    const objectArgs = { prompt, ...options };
+    try {
+      const result = await generator(objectArgs);
+      if (typeof result === "string" && result.trim().length > 0) {
+        return result;
+      }
+      if (typeof result === "string" && result.length > 0) {
+        return result;
+      }
+    } catch (error) {
+      // Fall through to positional call for legacy signatures.
+    }
+    return generator(prompt, options);
+  }
+
   async function generateInference(prompt) {
+    const options = { stream: false, stop: [] };
     if (window.SillyTavern?.generateQuietPrompt) {
-      return window.SillyTavern.generateQuietPrompt(prompt, {
-        stream: false,
-        stop: []
-      });
+      return invokeQuietPrompt(window.SillyTavern.generateQuietPrompt, prompt, options);
     }
     if (typeof window.generateQuietPrompt === "function") {
-      return window.generateQuietPrompt(prompt, { stream: false });
+      return invokeQuietPrompt(window.generateQuietPrompt, prompt, { stream: false });
     }
     const context = window.SillyTavern?.getContext?.();
     if (context?.generateQuietPrompt) {
-      return context.generateQuietPrompt(prompt, {
-        stream: false,
-        stop: []
-      });
+      return invokeQuietPrompt(context.generateQuietPrompt, prompt, options);
     }
     throw new Error("generateQuietPrompt API not available.");
   }
