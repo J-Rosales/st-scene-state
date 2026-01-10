@@ -87,7 +87,8 @@
       yamlEditMode: false,
       yamlDraft: "",
       lastFixtureReport: null,
-      settingsObserver: null
+      settingsObserver: null,
+      panelObserver: null
     }
   };
 
@@ -1598,6 +1599,23 @@
     }
   }
 
+  function ensurePanelVisibilityObserver() {
+    if (state.runtime.panelObserver || !state.ui.panelWrapper) return;
+    const observer = new MutationObserver(() => {
+      const settings = getExtensionSettings();
+      if (!settings.panel_open) return;
+      if (state.ui.panelWrapper.classList.contains("closedDrawer")) {
+        state.ui.panelWrapper.classList.add("openDrawer");
+        state.ui.panelWrapper.classList.remove("closedDrawer");
+      }
+    });
+    observer.observe(state.ui.panelWrapper, {
+      attributes: true,
+      attributeFilter: ["class"]
+    });
+    state.runtime.panelObserver = observer;
+  }
+
   function renderCharacters(chatState) {
     const list = state.ui.controls.characters;
     if (!list) return;
@@ -1776,6 +1794,7 @@
       state.ui.panelToggle.checked = settings.panel_open;
     }
     applyPanelState();
+    ensurePanelVisibilityObserver();
     renderCharacters(chatState);
   }
 
