@@ -2183,6 +2183,9 @@
       eventTypes.MESSAGE_SENT,
       eventTypes.MESSAGE_RECEIVED,
       eventTypes.MESSAGE_EDITED,
+      eventTypes.MESSAGE_UPDATED,
+      eventTypes.MESSAGE_SWIPED,
+      eventTypes.MESSAGE_REGENERATED,
       eventTypes.CHAT_CHANGED
     ].filter(Boolean);
     events.forEach((eventType) => {
