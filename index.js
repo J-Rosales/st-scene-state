@@ -1114,6 +1114,20 @@
     const settings = getExtensionSettings();
     const prompt = buildExtractionPrompt(messages, chatState, overrides);
     const maxOutputChars = Number(settings.max_inference_output_chars) || 15000;
+    const unescapeYamlOutput = (text) => {
+      if (!text.includes("\\n") || text.includes("\n")) {
+        return text;
+      }
+      let normalized = text;
+      const trimmed = normalized.trim();
+      if (
+        (trimmed.startsWith("\"") && trimmed.endsWith("\"")) ||
+        (trimmed.startsWith("'") && trimmed.endsWith("'"))
+      ) {
+        normalized = trimmed.slice(1, -1);
+      }
+      return normalized.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\r/g, "\r");
+    };
     let rawResult = null;
     let parseResult = null;
     let errorMessage = null;
@@ -1129,7 +1143,8 @@
         rawResult = rawResult.slice(0, maxOutputChars);
         throw new Error("Model output exceeded max length.");
       }
-      parseResult = yamlUtils.parseSimpleYaml(rawResult);
+      const parsedInput = unescapeYamlOutput(rawResult);
+      parseResult = yamlUtils.parseSimpleYaml(parsedInput);
       if (!parseResult || typeof parseResult !== "object") {
         throw new Error("Failed to parse YAML.");
       }
@@ -1146,7 +1161,8 @@
         if (reformatted.length > maxOutputChars) {
           throw new Error("Reformatted output exceeded max length.");
         }
-        parseResult = yamlUtils.parseSimpleYaml(reformatted);
+        const parsedInput = unescapeYamlOutput(reformatted);
+        parseResult = yamlUtils.parseSimpleYaml(parsedInput);
         if (!parseResult || typeof parseResult !== "object") {
           throw new Error("Failed to parse reformatted YAML.");
         }
