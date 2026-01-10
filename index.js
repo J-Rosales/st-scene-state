@@ -644,6 +644,13 @@
     if (typeof window.generateQuietPrompt === "function") {
       return window.generateQuietPrompt(prompt, { stream: false });
     }
+    const context = window.SillyTavern?.getContext?.();
+    if (context?.generateQuietPrompt) {
+      return context.generateQuietPrompt(prompt, {
+        stream: false,
+        stop: []
+      });
+    }
     throw new Error("generateQuietPrompt API not available.");
   }
 
@@ -662,7 +669,8 @@
 
   function buildEntityLookup(entities) {
     const lookup = new Map();
-    (entities || []).forEach((entity) => {
+    const list = Array.isArray(entities) ? entities : [];
+    list.forEach((entity) => {
       const key = normalizeEntityName(entity?.name);
       if (!key) return;
       if (!lookup.has(key)) lookup.set(key, []);
@@ -700,11 +708,11 @@
   }
 
   function applyContinuity(snapshotObj, previousObj) {
-    const previousAgents = previousObj?.agents;
-    const previousObjects = previousObj?.objects;
+    const previousAgents = Array.isArray(previousObj?.agents) ? previousObj.agents : [];
+    const previousObjects = Array.isArray(previousObj?.objects) ? previousObj.objects : [];
     if (snapshotObj?.agents && Array.isArray(snapshotObj.agents)) {
       const priorByName = buildEntityLookup(previousAgents);
-      const priorBySalience = [...(previousAgents || [])].sort(compareBySalienceThenName);
+      const priorBySalience = [...previousAgents].sort(compareBySalienceThenName);
       snapshotObj.agents.forEach((agent, index) => {
         if (!agent) return;
         const name = normalizeEntityName(agent.name);
@@ -721,7 +729,7 @@
     }
     if (snapshotObj?.objects && Array.isArray(snapshotObj.objects)) {
       const priorByName = buildEntityLookup(previousObjects);
-      const priorBySalience = [...(previousObjects || [])].sort(compareBySalienceThenName);
+      const priorBySalience = [...previousObjects].sort(compareBySalienceThenName);
       snapshotObj.objects.forEach((object, index) => {
         if (!object) return;
         const name = normalizeEntityName(object.name);
@@ -2060,6 +2068,30 @@
         applyPanelState();
       });
       state.ui.panelToggle = panelToggle;
+    }
+    const closeButton = wrapper.querySelector(".floating_panel_close");
+    closeButton?.addEventListener("click", () => {
+      wrapper.classList.remove("is-open");
+      const nextSettings = getExtensionSettings();
+      nextSettings.panel_open = false;
+      saveSettings();
+    });
+    const toggleMenu = document.querySelector("#option_toggle_AN");
+    if (toggleMenu && !document.querySelector("#option_toggle_scene_state")) {
+      const menuItem = document.createElement("a");
+      menuItem.id = "option_toggle_scene_state";
+      menuItem.innerHTML = `
+        <i class="fa-lg fa-solid fa-wave-square"></i>
+        <span>Scene State</span>
+      `;
+      toggleMenu.insertAdjacentElement("afterend", menuItem);
+      menuItem.addEventListener("click", () => {
+        wrapper.classList.toggle("is-open");
+        const nextSettings = getExtensionSettings();
+        nextSettings.panel_open = wrapper.classList.contains("is-open");
+        saveSettings();
+      });
+      state.ui.panelToggle = menuItem;
     }
     applySessionToggle(state.ui.sections.narrative, `${EXTENSION_NAME}-narrative-open`);
     applySessionToggle(state.ui.sections.yaml, `${EXTENSION_NAME}-yaml-open`);
