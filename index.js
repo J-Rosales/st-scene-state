@@ -249,6 +249,10 @@
       normalized.conflicts = Array.isArray(normalized.conflicts) ? normalized.conflicts : [];
       normalized.agents.forEach((agent) => {
         agent.anchors = Array.isArray(agent?.anchors) ? agent.anchors : [];
+        agent.anchors.forEach((anchor) => {
+          anchor.supports = Array.isArray(anchor?.supports) ? anchor.supports : [];
+          anchor.contacts = Array.isArray(anchor?.contacts) ? anchor.contacts : [];
+        });
       });
       return normalized;
     }
@@ -256,11 +260,14 @@
     function buildSupportsAndContacts(snapshotObj) {
       const supports = [];
       const contacts = [];
-      (snapshotObj.agents || []).forEach((agent) => {
+      const agents = Array.isArray(snapshotObj.agents) ? snapshotObj.agents : [];
+      agents.forEach((agent) => {
         const source = agent?.id || agent?.name || "";
-        (agent?.anchors || []).forEach((anchor) => {
+        const anchors = Array.isArray(agent?.anchors) ? agent.anchors : [];
+        anchors.forEach((anchor) => {
           const anchorName = anchor?.name || "";
-          (anchor?.supports || []).forEach((support) => {
+          const supportsList = Array.isArray(anchor?.supports) ? anchor.supports : [];
+          supportsList.forEach((support) => {
             if (!support?.target) return;
             supports.push({
               source,
@@ -269,7 +276,8 @@
               confidence: Number(support.confidence ?? 0.4)
             });
           });
-          (anchor?.contacts || []).forEach((contact) => {
+          const contactsList = Array.isArray(anchor?.contacts) ? anchor.contacts : [];
+          contactsList.forEach((contact) => {
             if (!contact?.target) return;
             contacts.push({
               source,
@@ -407,6 +415,9 @@
     }
     if (!chatState.locks || typeof chatState.locks !== "object") {
       chatState.locks = {};
+    }
+    if (!Array.isArray(chatState.narrative_lines)) {
+      chatState.narrative_lines = [];
     }
     return chatState;
   }
