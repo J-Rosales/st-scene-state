@@ -2042,7 +2042,7 @@
   function mountPanel() {
     if (state.ui.panel) return;
     const { wrapper, panel } = buildFloatingPanel();
-    const host = document.querySelector("#movingDivs") || document.body;
+    const host = document.body;
     host.appendChild(wrapper);
     state.ui.panel = panel;
     state.ui.panelWrapper = wrapper;
@@ -2104,8 +2104,8 @@
       renderPanel();
     });
     ensureExtensionSettingsBlock();
-    const closeButton = wrapper.querySelector(".floating_panel_close");
-    closeButton?.addEventListener("click", () => {
+    const closeButtonMenu = wrapper.querySelector(".floating_panel_close");
+    closeButtonMenu?.addEventListener("click", () => {
       wrapper.classList.remove("is-open");
       const nextSettings = getExtensionSettings();
       nextSettings.panel_open = false;
