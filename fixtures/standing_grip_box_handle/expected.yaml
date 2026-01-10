@@ -1,0 +1,45 @@
+schema_version: pose-contact-spec-0.1
+meta:
+  updated_at: '2024-01-01T00:00:00Z'
+  extraction_mode: conservative
+  k: 5
+  allow_implied_objects: false
+  max_present_characters: 2
+agents:
+- id: agent-sam
+  name: Sam
+  present: true
+  confidence: 0.8
+  salience_score: 0.75
+  posture:
+    value: standing
+    confidence: 0.75
+  anchors:
+  - name: body
+    contacts:
+    - target: box_handle
+      kind: grip
+      confidence: 0.75
+    supports: []
+objects:
+- id: object-box
+  name: box
+  type: object
+  confidence: 0.7
+  salience_score: 0.55
+- id: object-box_handle
+  name: box_handle
+  type: attachment_point
+  confidence: 0.75
+  salience_score: 0.5
+supports: []
+contacts:
+- source: agent-sam
+  anchor: body
+  target: box_handle
+  kind: grip
+  confidence: 0.75
+narrative_projection:
+- text: Sam stands and grips the box handle.
+  confidence: 0.75
+conflicts: []

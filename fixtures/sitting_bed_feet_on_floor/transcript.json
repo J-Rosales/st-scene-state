@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "title": "Sitting on bed, feet down",
+    "k": 6,
+    "allow_implied_objects": true,
+    "max_present_characters": 2
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Rae sits on the bed with both feet on the floor."
+    },
+    {
+      "role": "assistant",
+      "content": "Rae remains seated on the bed, feet still on the floor."
+    }
+  ]
+}

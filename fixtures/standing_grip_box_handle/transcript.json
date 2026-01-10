@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "title": "Gripping a box handle",
+    "k": 5,
+    "allow_implied_objects": false,
+    "max_present_characters": 2
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Sam stands and grips the box handle with one hand."
+    },
+    {
+      "role": "assistant",
+      "content": "Sam keeps standing, hand still gripping the box handle."
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+schema_version: pose-contact-spec-0.1
+meta:
+  updated_at: '2024-01-01T00:00:00Z'
+  extraction_mode: conservative
+  k: 6
+  allow_implied_objects: false
+  max_present_characters: 2
+agents:
+- id: agent-tara
+  name: Tara
+  present: true
+  confidence: 0.85
+  salience_score: 0.8
+  posture:
+    value: lying
+    confidence: 0.75
+  anchors:
+  - name: body
+    contacts:
+    - target: pillow
+      kind: touch
+      confidence: 0.7
+    supports:
+    - target: sofa
+      confidence: 0.75
+objects:
+- id: object-sofa
+  name: sofa
+  type: furniture
+  confidence: 0.8
+  salience_score: 0.6
+- id: object-pillow
+  name: pillow
+  type: object
+  confidence: 0.7
+  salience_score: 0.45
+supports:
+- source: agent-tara
+  anchor: body
+  target: sofa
+  confidence: 0.75
+contacts:
+- source: agent-tara
+  anchor: body
+  target: pillow
+  kind: touch
+  confidence: 0.7
+narrative_projection:
+- text: Tara lies on the sofa with her head touching the pillow.
+  confidence: 0.75
+conflicts: []

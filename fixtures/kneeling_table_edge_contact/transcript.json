@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "title": "Kneeling at table",
+    "k": 4,
+    "allow_implied_objects": true,
+    "max_present_characters": 2
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Eli kneels on the floor beside the table and places both hands on the table edge."
+    },
+    {
+      "role": "assistant",
+      "content": "Eli stays kneeling, hands on the table edge."
+    }
+  ]
+}

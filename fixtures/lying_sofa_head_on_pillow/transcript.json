@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "title": "Lying on sofa with pillow",
+    "k": 6,
+    "allow_implied_objects": false,
+    "max_present_characters": 2
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Tara lies on the sofa with her head resting on the pillow."
+    },
+    {
+      "role": "assistant",
+      "content": "Tara remains lying on the sofa, head still on the pillow."
+    }
+  ]
+}

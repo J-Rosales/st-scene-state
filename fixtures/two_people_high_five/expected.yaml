@@ -1,0 +1,49 @@
+schema_version: pose-contact-spec-0.1
+meta:
+  updated_at: '2024-01-01T00:00:00Z'
+  extraction_mode: conservative
+  k: 4
+  allow_implied_objects: false
+  max_present_characters: 3
+agents:
+- id: agent-ivy
+  name: Ivy
+  present: true
+  confidence: 0.85
+  salience_score: 0.75
+  anchors:
+  - name: hand
+    contacts:
+    - target: Noah
+      kind: high_five
+      confidence: 0.75
+    supports: []
+- id: agent-noah
+  name: Noah
+  present: true
+  confidence: 0.85
+  salience_score: 0.75
+  anchors:
+  - name: hand
+    contacts:
+    - target: Ivy
+      kind: high_five
+      confidence: 0.75
+    supports: []
+objects: []
+supports: []
+contacts:
+- source: agent-ivy
+  anchor: hand
+  target: Noah
+  kind: high_five
+  confidence: 0.75
+- source: agent-noah
+  anchor: hand
+  target: Ivy
+  kind: high_five
+  confidence: 0.75
+narrative_projection:
+- text: Ivy and Noah high-five.
+  confidence: 0.8
+conflicts: []

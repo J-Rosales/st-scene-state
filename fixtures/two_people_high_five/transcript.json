@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "title": "Two-person high five",
+    "k": 4,
+    "allow_implied_objects": false,
+    "max_present_characters": 3
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Ivy and Noah raise their hands and high-five."
+    },
+    {
+      "role": "assistant",
+      "content": "Ivy and Noah keep their stance after the high-five."
+    }
+  ]
+}

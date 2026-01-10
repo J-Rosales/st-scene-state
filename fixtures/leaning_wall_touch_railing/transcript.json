@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "title": "Leaning at railing",
+    "k": 5,
+    "allow_implied_objects": true,
+    "max_present_characters": 2
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Nina stands by the railing, leaning her back against the wall, one hand resting on the railing."
+    },
+    {
+      "role": "assistant",
+      "content": "Nina remains standing, back against the wall, hand on the railing."
+    }
+  ]
+}

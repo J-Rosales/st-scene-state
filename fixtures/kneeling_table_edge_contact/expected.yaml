@@ -1,0 +1,56 @@
+schema_version: pose-contact-spec-0.1
+meta:
+  updated_at: '2024-01-01T00:00:00Z'
+  extraction_mode: conservative
+  k: 4
+  allow_implied_objects: true
+  max_present_characters: 2
+agents:
+- id: agent-eli
+  name: Eli
+  present: true
+  confidence: 0.8
+  salience_score: 0.7
+  posture:
+    value: kneeling
+    confidence: 0.7
+  anchors:
+  - name: body
+    contacts:
+    - target: table_edge
+      kind: touch
+      confidence: 0.7
+    supports:
+    - target: floor
+      confidence: 0.6
+objects:
+- id: object-floor
+  name: floor
+  type: surface
+  confidence: 0.55
+  salience_score: 0.35
+- id: object-table
+  name: table
+  type: furniture
+  confidence: 0.7
+  salience_score: 0.55
+- id: object-table_edge
+  name: table_edge
+  type: furniture_part
+  confidence: 0.65
+  salience_score: 0.45
+supports:
+- source: agent-eli
+  anchor: body
+  target: floor
+  confidence: 0.6
+contacts:
+- source: agent-eli
+  anchor: body
+  target: table_edge
+  kind: touch
+  confidence: 0.7
+narrative_projection:
+- text: Eli kneels on the floor beside the table and touches the table edge.
+  confidence: 0.75
+conflicts: []
