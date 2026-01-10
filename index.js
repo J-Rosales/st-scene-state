@@ -62,6 +62,8 @@
   const state = {
     ui: {
       panel: null,
+      panelWrapper: null,
+      panelToggle: null,
       narrative: null,
       yaml: null,
       yamlEditor: null,
@@ -1447,6 +1449,58 @@
     return panel;
   }
 
+  function buildFloatingPanel() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "drawer-content fillRight st-scene-state-floating closedDrawer";
+    wrapper.id = "st-scene-state-floating-panel";
+    const controlBar = document.createElement("div");
+    controlBar.className = "panelControlBar flex-container alignItemsBaseline";
+    controlBar.innerHTML = `
+      <div class="fa-fw fa-solid fa-grip drag-grabber"></div>
+      <div class="inline-drawer-maximize">
+        <i class="floating_panel_maximize fa-fw fa-solid fa-window-maximize"></i>
+      </div>
+      <div class="fa-fw fa-solid fa-circle-xmark floating_panel_close"></div>
+    `;
+    const body = document.createElement("div");
+    body.className = "st-scene-state-body scrollY";
+    const panel = buildPanel();
+    body.appendChild(panel);
+    wrapper.appendChild(controlBar);
+    wrapper.appendChild(body);
+    return { wrapper, panel };
+  }
+
+  function buildExtensionSettings() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "inline-drawer wide100p st-scene-state-extension-settings";
+    wrapper.innerHTML = `
+      <div class="inline-drawer-toggle inline-drawer-header">
+        <b>Scene State</b>
+        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+      </div>
+      <div class="inline-drawer-content">
+        <label class="checkbox_label">
+          <input type="checkbox" data-role="panel-open" />
+          <span>Show floating panel</span>
+        </label>
+      </div>
+    `;
+    return wrapper;
+  }
+
+  function applyPanelState() {
+    if (!state.ui.panelWrapper) return;
+    const settings = getExtensionSettings();
+    if (settings.panel_open) {
+      state.ui.panelWrapper.classList.add("openDrawer");
+      state.ui.panelWrapper.classList.remove("closedDrawer");
+    } else {
+      state.ui.panelWrapper.classList.remove("openDrawer");
+      state.ui.panelWrapper.classList.add("closedDrawer");
+    }
+  }
+
   function renderCharacters(chatState) {
     const list = state.ui.controls.characters;
     if (!list) return;
@@ -1621,6 +1675,10 @@
     state.ui.sections.developer.style.display = settings.developer_mode ? "block" : "none";
     state.ui.controls.openFixtureReport.disabled = !settings.last_fixture_report;
     state.ui.devReport.textContent = settings.last_fixture_report || "";
+    if (state.ui.panelToggle instanceof HTMLInputElement) {
+      state.ui.panelToggle.checked = settings.panel_open;
+    }
+    applyPanelState();
     renderCharacters(chatState);
   }
 
@@ -1925,26 +1983,11 @@
 
   function mountPanel() {
     if (state.ui.panel) return;
-    const panel = buildPanel();
-    const host =
-      document.querySelector("#right-nav-panel") ||
-      document.querySelector("#right-panel") ||
-      document.body;
-    const wrapper = document.createElement("div");
-    wrapper.className = "st-scene-state-container";
-    const toggle = document.createElement("button");
-    toggle.className = "st-scene-state-toggle";
-    toggle.textContent = "Scene State";
-    toggle.addEventListener("click", () => {
-      wrapper.classList.toggle("is-open");
-      const settings = getExtensionSettings();
-      settings.panel_open = wrapper.classList.contains("is-open");
-      saveSettings();
-    });
-    wrapper.appendChild(toggle);
-    wrapper.appendChild(panel);
+    const { wrapper, panel } = buildFloatingPanel();
+    const host = document.querySelector("#movingDivs") || document.body;
     host.appendChild(wrapper);
     state.ui.panel = panel;
+    state.ui.panelWrapper = wrapper;
     state.ui.status = panel.querySelector("[data-role='status']");
     state.ui.indicator = panel.querySelector("[data-role='indicator']");
     state.ui.timestamp = panel.querySelector("[data-role='timestamp']");
@@ -1993,9 +2036,30 @@
       openFixtureReport: panel.querySelector("[data-role='open-fixture-report']"),
       characters: panel.querySelector("[data-role='characters']")
     };
-    const settings = getExtensionSettings();
-    if (settings.panel_open) {
-      wrapper.classList.add("is-open");
+    applyPanelState();
+    const closeButton = wrapper.querySelector(".floating_panel_close");
+    closeButton?.addEventListener("click", () => {
+      const nextSettings = getExtensionSettings();
+      nextSettings.panel_open = false;
+      saveSettings();
+      applyPanelState();
+      renderPanel();
+    });
+    const extensionSettingsHost =
+      document.querySelector("#extensions_settings") ||
+      document.querySelector("#extensions_settings2") ||
+      document.querySelector("#extensionsMenu");
+    if (extensionSettingsHost && !document.querySelector(".st-scene-state-extension-settings")) {
+      const settingsBlock = buildExtensionSettings();
+      extensionSettingsHost.appendChild(settingsBlock);
+      const panelToggle = settingsBlock.querySelector("[data-role='panel-open']");
+      panelToggle?.addEventListener("change", (event) => {
+        const nextSettings = getExtensionSettings();
+        nextSettings.panel_open = Boolean(event.target.checked);
+        saveSettings();
+        applyPanelState();
+      });
+      state.ui.panelToggle = panelToggle;
     }
     applySessionToggle(state.ui.sections.narrative, `${EXTENSION_NAME}-narrative-open`);
     applySessionToggle(state.ui.sections.yaml, `${EXTENSION_NAME}-yaml-open`);
