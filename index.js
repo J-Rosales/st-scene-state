@@ -92,6 +92,8 @@
       messageObserver: null,
       messageObserverDebounce: null,
       messageObserverTimeout: null,
+      messageObserverRetryId: null,
+      messageObserverRetryStartedAt: 0,
       lastMessageSignature: null,
       eventHookActive: false
     }
@@ -489,9 +491,12 @@
   }
 
   function observeChatMessages() {
-    if (state.runtime.messageObserver) return;
+    if (state.runtime.messageObserver) return true;
     const container = getChatContainer();
-    if (!container) return;
+    if (!container) {
+      scheduleMessageObserverRetry();
+      return false;
+    }
     const observer = new MutationObserver((mutations) => {
       const addedNodes = mutations.flatMap((mutation) =>
         Array.from(mutation.addedNodes || [])
@@ -524,6 +529,8 @@
     });
     observer.observe(container, { childList: true, subtree: true });
     state.runtime.messageObserver = observer;
+    clearMessageObserverRetry();
+    return true;
   }
 
   function getLlmConnectionStatus() {
@@ -2456,12 +2463,12 @@
   }
 
   function registerMessageHooks() {
-    if (state.runtime.messageHooksRegistered) return;
+    if (state.runtime.messageHooksRegistered) return true;
     const eventSource = getEventSource();
     const eventTypes = getEventTypes();
     if (!eventSource || !eventTypes) {
       scheduleMessageHooksRetry();
-      return;
+      return false;
     }
     const events = [
       eventTypes.MESSAGE_SENT,
@@ -2475,7 +2482,7 @@
     if (!events.length) {
       logDeveloperMessage("Message hooks unavailable; missing event types.", "warn");
       scheduleMessageHooksRetry();
-      return;
+      return false;
     }
     events.forEach((eventType) => {
       eventSource.on(eventType, (payload) => {
@@ -2490,6 +2497,7 @@
     state.runtime.messageHooksRegistered = true;
     clearMessageHooksRetry();
     logDeveloperMessage("Message hooks registered.");
+    return true;
   }
 
   const MESSAGE_HOOK_RETRY_INTERVAL = 250;
@@ -2507,6 +2515,37 @@
     clearInterval(state.runtime.messageHooksRetryId);
     state.runtime.messageHooksRetryId = null;
     state.runtime.messageHooksRetryStartedAt = 0;
+  }
+
+  const MESSAGE_OBSERVER_RETRY_INTERVAL = 250;
+  const MESSAGE_OBSERVER_RETRY_TIMEOUT = 5000;
+
+  function clearMessageObserverRetry() {
+    if (!state.runtime.messageObserverRetryId) return;
+    clearInterval(state.runtime.messageObserverRetryId);
+    state.runtime.messageObserverRetryId = null;
+    state.runtime.messageObserverRetryStartedAt = 0;
+  }
+
+  function scheduleMessageObserverRetry() {
+    if (state.runtime.messageObserver || state.runtime.messageObserverRetryId) return;
+    state.runtime.messageObserverRetryStartedAt = Date.now();
+    logDeveloperMessage("Chat container not ready; retrying observer.");
+    state.runtime.messageObserverRetryId = window.setInterval(() => {
+      if (state.runtime.messageObserver) {
+        clearMessageObserverRetry();
+        return;
+      }
+      if (
+        Date.now() - state.runtime.messageObserverRetryStartedAt >
+        MESSAGE_OBSERVER_RETRY_TIMEOUT
+      ) {
+        clearMessageObserverRetry();
+        logDeveloperMessage("Chat observer failed to initialize after retry timeout.", "warn");
+        return;
+      }
+      observeChatMessages();
+    }, MESSAGE_OBSERVER_RETRY_INTERVAL);
   }
 
   function scheduleMessageHooksRetry() {
