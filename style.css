@@ -31,6 +31,9 @@
 .st-scene-state-floating .panelControlBar {
   padding: 0.45rem 0.7rem 0.2rem;
   margin-bottom: 0.4rem;
+  position: static;
+  inset: auto;
+  align-self: stretch;
 }
 
 .st-scene-state-floating .panelControlBar .inline-drawer-maximize,
