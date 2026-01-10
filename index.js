@@ -1462,23 +1462,41 @@
     renderPanel();
 
     try {
-      const extraction = await runExtraction({ messages, chatState, manual });
       const settings = getExtensionSettings();
       const preprocess = preprocessMessages(messages, settings);
       const hasRecentContent = preprocess.messages.some(
         (msg) => String(msg.content || "").trim().length > 0
       );
-      const isEmptySnapshot =
-        (!Array.isArray(extraction.snapshotObj?.agents) ||
-          extraction.snapshotObj.agents.length === 0) &&
-        (!Array.isArray(extraction.snapshotObj?.objects) ||
-          extraction.snapshotObj.objects.length === 0) &&
-        (!Array.isArray(extraction.snapshotObj?.narrative_projection) ||
-          extraction.snapshotObj.narrative_projection.length === 0) &&
+      const isSnapshotEmpty = (snapshotObj) =>
+        (!Array.isArray(snapshotObj?.agents) || snapshotObj.agents.length === 0) &&
+        (!Array.isArray(snapshotObj?.objects) || snapshotObj.objects.length === 0) &&
+        (!Array.isArray(snapshotObj?.narrative_projection) ||
+          snapshotObj.narrative_projection.length === 0) &&
         hasRecentContent;
+
+      let extraction = await runExtraction({ messages, chatState, manual });
       let snapshotObj = extraction.snapshotObj;
+      const shouldRetryEmpty =
+        isSnapshotEmpty(snapshotObj) &&
+        (settings.extraction_mode !== "descriptive" || !settings.allow_implied_objects);
+      if (shouldRetryEmpty) {
+        const retryExtraction = await runExtraction({
+          messages,
+          chatState,
+          overrides: {
+            extraction_mode: "descriptive",
+            allow_implied_objects: true
+          },
+          manual
+        });
+        if (!isSnapshotEmpty(retryExtraction.snapshotObj)) {
+          extraction = retryExtraction;
+          snapshotObj = retryExtraction.snapshotObj;
+        }
+      }
+
       let emptySnapshotError = null;
-      if (isEmptySnapshot) {
+      if (isSnapshotEmpty(snapshotObj)) {
         emptySnapshotError = "empty_snapshot";
         if (chatState.snapshot_obj) {
           snapshotObj = JSON.parse(JSON.stringify(chatState.snapshot_obj));
