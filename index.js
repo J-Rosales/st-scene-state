@@ -1208,7 +1208,30 @@
 
     try {
       const extraction = await runExtraction({ messages, chatState, manual });
-      const canonicalSnapshot = postProcessSnapshot(extraction.snapshotObj, chatState, messages);
+      const settings = getExtensionSettings();
+      const preprocess = preprocessMessages(messages, settings);
+      const hasRecentContent = preprocess.messages.some(
+        (msg) => String(msg.content || "").trim().length > 0
+      );
+      const isEmptySnapshot =
+        (!Array.isArray(extraction.snapshotObj?.agents) ||
+          extraction.snapshotObj.agents.length === 0) &&
+        (!Array.isArray(extraction.snapshotObj?.objects) ||
+          extraction.snapshotObj.objects.length === 0) &&
+        (!Array.isArray(extraction.snapshotObj?.narrative_projection) ||
+          extraction.snapshotObj.narrative_projection.length === 0) &&
+        hasRecentContent;
+      let snapshotObj = extraction.snapshotObj;
+      let emptySnapshotError = null;
+      if (isEmptySnapshot) {
+        emptySnapshotError = "empty_snapshot";
+        if (chatState.snapshot_obj) {
+          snapshotObj = JSON.parse(JSON.stringify(chatState.snapshot_obj));
+          snapshotObj.conflicts = Array.isArray(snapshotObj.conflicts) ? snapshotObj.conflicts : [];
+          snapshotObj.conflicts.push({ note: "empty_snapshot", confidence: 0.4 });
+        }
+      }
+      const canonicalSnapshot = postProcessSnapshot(snapshotObj, chatState, messages);
       const canonicalYaml = yamlUtils.dumpYaml(canonicalSnapshot);
       persistChatState({
         schema_version: canonicalSnapshot.schema_version || SCHEMA_VERSION,
@@ -1216,8 +1239,8 @@
         snapshot_yaml: canonicalYaml,
         snapshot_obj: canonicalSnapshot,
         narrative_lines: extractNarrativeLines(canonicalSnapshot, canonicalYaml),
-        last_error: extraction.error,
-        last_success: extraction.error ? null : new Date().toISOString()
+        last_error: emptySnapshotError || extraction.error,
+        last_success: emptySnapshotError || extraction.error ? null : new Date().toISOString()
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Inference error";
