@@ -18,7 +18,8 @@
     developer_mode: false,
     prompt_profile: "auto",
     max_inference_output_chars: 15000,
-    last_fixture_report: ""
+    last_fixture_report: "",
+    log_detailed_errors: false
   };
   const PRONOUN_NAMES = new Set([
     "he",
@@ -1319,7 +1320,16 @@
   }
 
   function registerPromptInjection() {
-    const injectionHandler = () => buildInjectionText();
+    const injectionHandler = () => {
+      try {
+        return buildInjectionText();
+      } catch (error) {
+        logDetailedError("Prompt injection failed.", {
+          error: formatErrorDetails(error)
+        });
+        return "";
+      }
+    };
     if (window.SillyTavern?.registerPromptInjection) {
       window.SillyTavern.registerPromptInjection(EXTENSION_NAME, injectionHandler);
       return;
@@ -1359,6 +1369,8 @@
     let errorMessage = null;
     let usedReformat = false;
     let output = null;
+    let extractionError = null;
+    let reformatFailure = null;
 
     try {
       rawResult = await generateInference(prompt);
@@ -1376,6 +1388,7 @@
       }
       output = parseResult;
     } catch (error) {
+      extractionError = error;
       const rawText = rawResult || (error instanceof Error ? error.message : String(error));
       const reformatPrompt = buildReformatPrompt(rawText);
       try {
@@ -1394,11 +1407,24 @@
         }
         output = parseResult;
       } catch (reformatError) {
+        reformatFailure = reformatError;
         errorMessage = reformatError instanceof Error ? reformatError.message : "Invalid YAML output";
       }
     }
 
     if (!output) {
+      logDetailedError("Extraction failed.", {
+        error: formatErrorDetails(extractionError),
+        reformatError: formatErrorDetails(reformatFailure),
+        usedReformat,
+        errorMessage,
+        prompt,
+        rawResultPreview: rawResult?.slice?.(0, 1000) || null,
+        settings: {
+          extraction_mode: overrides.extraction_mode || settings.extraction_mode,
+          prompt_profile: settings.prompt_profile
+        }
+      });
       const fallback = chatState?.snapshot_obj
         ? JSON.parse(JSON.stringify(chatState.snapshot_obj))
         : {
@@ -1523,6 +1549,9 @@
       if (manual) {
         console.warn(`[${EXTENSION_NAME}]`, message);
       }
+      logDetailedError("Inference error.", {
+        error: formatErrorDetails(error)
+      });
     }
     state.runtime.inferenceRunning = false;
     renderPanel();
@@ -1598,6 +1627,10 @@
       if (!response.ok) throw new Error("manifest fetch failed");
       return response.json();
     } catch (error) {
+      logDetailedError("Schema manifest load failed.", {
+        error: formatErrorDetails(error),
+        url
+      });
       return null;
     }
   }
@@ -1762,6 +1795,12 @@
         <summary>
           <span>Developer</span>
         </summary>
+        <div class="st-scene-state-controls st-scene-state-dev-options">
+          <label title="Log detailed errors for extraction/injection to the browser console.">
+            <span>Log Detailed Errors in Console</span>
+            <input type="checkbox" data-role="log-detailed-errors" />
+          </label>
+        </div>
         <div class="st-scene-state-dev-controls">
           <button data-role="run-fixtures">Run Fixtures</button>
           <button data-role="open-fixture-report">Open Last Fixture Report</button>
@@ -2052,6 +2091,7 @@
     state.ui.controls.injectPrompt.checked = settings.inject_prompt;
     state.ui.controls.assistantOnly.checked = settings.only_assistant_messages;
     state.ui.controls.developerMode.checked = settings.developer_mode;
+    state.ui.controls.logDetailedErrors.checked = settings.log_detailed_errors;
     const connectionStatus = getLlmConnectionStatus();
     const hasConnection = !connectionStatus.known || connectionStatus.connected;
     state.ui.controls.refresh.disabled = state.runtime.inferenceRunning || !hasConnection;
@@ -2196,6 +2236,9 @@
     } catch (error) {
       state.ui.devStatus.textContent = "Fixture run failed.";
       state.ui.devReport.textContent = error instanceof Error ? error.message : "Unknown error";
+      logDetailedError("Fixture run failed.", {
+        error: formatErrorDetails(error)
+      });
     }
   }
 
@@ -2282,6 +2325,12 @@
     controls.developerMode.addEventListener("change", (event) => {
       const settings = getExtensionSettings();
       settings.developer_mode = Boolean(event.target.checked);
+      saveSettings();
+      renderPanel();
+    });
+    controls.logDetailedErrors.addEventListener("change", (event) => {
+      const settings = getExtensionSettings();
+      settings.log_detailed_errors = Boolean(event.target.checked);
       saveSettings();
       renderPanel();
     });
@@ -2424,6 +2473,7 @@
       injectPrompt: panel.querySelector("[data-role='inject-prompt']"),
       assistantOnly: panel.querySelector("[data-role='assistant-only']"),
       developerMode: panel.querySelector("[data-role='developer-mode']"),
+      logDetailedErrors: panel.querySelector("[data-role='log-detailed-errors']"),
       refresh: panel.querySelector("[data-role='refresh']"),
       reset: panel.querySelector("[data-role='reset']"),
       copyYaml: panel.querySelector("[data-role='copy-yaml']"),
@@ -2526,6 +2576,24 @@
     if (!settings?.developer_mode) return;
     const logger = console[level] || console.log;
     logger(`[${EXTENSION_NAME}]`, message);
+  }
+
+  function formatErrorDetails(error) {
+    if (!error) return null;
+    if (error instanceof Error) {
+      return {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      };
+    }
+    return { message: String(error) };
+  }
+
+  function logDetailedError(message, details) {
+    const settings = getExtensionSettings();
+    if (!settings?.developer_mode || !settings.log_detailed_errors) return;
+    console.error(`[${EXTENSION_NAME}] ${message}`, details);
   }
 
   function clearMessageHooksRetry() {
