@@ -644,6 +644,13 @@
     if (typeof window.generateQuietPrompt === "function") {
       return window.generateQuietPrompt(prompt, { stream: false });
     }
+    const context = window.SillyTavern?.getContext?.();
+    if (context?.generateQuietPrompt) {
+      return context.generateQuietPrompt(prompt, {
+        stream: false,
+        stop: []
+      });
+    }
     throw new Error("generateQuietPrompt API not available.");
   }
 
