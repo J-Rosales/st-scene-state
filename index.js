@@ -88,7 +88,10 @@
       yamlDraft: "",
       lastFixtureReport: null,
       settingsObserver: null,
-      panelObserver: null
+      panelObserver: null,
+      messageHooksRegistered: false,
+      messageHooksRetryId: null,
+      messageHooksRetryStartedAt: 0
     }
   };
 
@@ -2366,9 +2369,13 @@
   }
 
   function registerMessageHooks() {
+    if (state.runtime.messageHooksRegistered) return;
     const eventSource = getEventSource();
     const eventTypes = getEventTypes();
-    if (!eventSource || !eventTypes) return;
+    if (!eventSource || !eventTypes) {
+      scheduleMessageHooksRetry();
+      return;
+    }
     const events = [
       eventTypes.MESSAGE_SENT,
       eventTypes.MESSAGE_RECEIVED,
@@ -2378,6 +2385,11 @@
       eventTypes.MESSAGE_REGENERATED,
       eventTypes.CHAT_CHANGED
     ].filter(Boolean);
+    if (!events.length) {
+      logDeveloperMessage("Message hooks unavailable; missing event types.", "warn");
+      scheduleMessageHooksRetry();
+      return;
+    }
     events.forEach((eventType) => {
       eventSource.on(eventType, (payload) => {
         if (eventType === eventTypes.CHAT_CHANGED) {
@@ -2387,6 +2399,44 @@
         }
       });
     });
+    state.runtime.messageHooksRegistered = true;
+    clearMessageHooksRetry();
+    logDeveloperMessage("Message hooks registered.");
+  }
+
+  const MESSAGE_HOOK_RETRY_INTERVAL = 250;
+  const MESSAGE_HOOK_RETRY_TIMEOUT = 5000;
+
+  function logDeveloperMessage(message, level = "log") {
+    const settings = getExtensionSettings();
+    if (!settings?.developer_mode) return;
+    const logger = console[level] || console.log;
+    logger(`[${EXTENSION_NAME}]`, message);
+  }
+
+  function clearMessageHooksRetry() {
+    if (!state.runtime.messageHooksRetryId) return;
+    clearInterval(state.runtime.messageHooksRetryId);
+    state.runtime.messageHooksRetryId = null;
+    state.runtime.messageHooksRetryStartedAt = 0;
+  }
+
+  function scheduleMessageHooksRetry() {
+    if (state.runtime.messageHooksRegistered || state.runtime.messageHooksRetryId) return;
+    state.runtime.messageHooksRetryStartedAt = Date.now();
+    logDeveloperMessage("Message hooks not ready; retrying.");
+    state.runtime.messageHooksRetryId = window.setInterval(() => {
+      if (state.runtime.messageHooksRegistered) {
+        clearMessageHooksRetry();
+        return;
+      }
+      if (Date.now() - state.runtime.messageHooksRetryStartedAt > MESSAGE_HOOK_RETRY_TIMEOUT) {
+        clearMessageHooksRetry();
+        logDeveloperMessage("Message hooks failed to register after retry timeout.", "warn");
+        return;
+      }
+      registerMessageHooks();
+    }, MESSAGE_HOOK_RETRY_INTERVAL);
   }
 
   function isAssistantEvent(eventPayload) {
