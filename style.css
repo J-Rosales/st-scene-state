@@ -28,6 +28,16 @@
   display: flex;
 }
 
+.st-scene-state-floating .panelControlBar {
+  padding: 0.45rem 0.7rem 0.2rem;
+  margin-bottom: 0.4rem;
+}
+
+.st-scene-state-floating .panelControlBar .inline-drawer-maximize,
+.st-scene-state-floating .panelControlBar .floating_panel_close {
+  margin-left: 0.3rem;
+}
+
 .st-scene-state-body {
   overflow: auto;
 }
