@@ -1445,11 +1445,21 @@
       </details>
       <details class="st-scene-state-section st-scene-state-yaml" data-role="yaml-section">
         <summary>
-          <span>Canonical YAML</span>
+          <span>Canonical Output</span>
           <div class="st-scene-state-inline-actions">
-            <button class="st-scene-state-copy" type="button" data-role="copy-yaml">Copy YAML</button>
-            <button class="st-scene-state-copy" type="button" data-role="copy-json">Copy JSON</button>
-            <button class="st-scene-state-copy" type="button" data-role="download-yaml">Download YAML</button>
+            <button class="st-scene-state-copy st-scene-state-icon-button" type="button" data-role="copy-yaml">
+              <i class="fa-solid fa-copy"></i>
+              <span class="st-scene-state-smallcaps">YAML</span>
+            </button>
+            <button class="st-scene-state-copy st-scene-state-icon-button" type="button" data-role="download-yaml">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span class="st-scene-state-action-join">+</span>
+              <span class="st-scene-state-smallcaps">YAML</span>
+            </button>
+            <button class="st-scene-state-copy st-scene-state-icon-button" type="button" data-role="copy-json">
+              <i class="fa-solid fa-copy"></i>
+              <span class="st-scene-state-smallcaps">JSON</span>
+            </button>
             <button class="st-scene-state-copy" type="button" data-role="edit-yaml">Edit</button>
           </div>
         </summary>
@@ -1798,6 +1808,9 @@
     state.ui.controls.applyYaml.style.display = state.runtime.yamlEditMode ? "inline-flex" : "none";
     state.ui.controls.revertYaml.style.display = state.runtime.yamlEditMode ? "inline-flex" : "none";
     state.ui.controls.editYaml.textContent = state.runtime.yamlEditMode ? "View" : "Edit";
+    if (state.runtime.yamlEditMode && state.ui.sections.yaml) {
+      state.ui.sections.yaml.open = true;
+    }
     state.ui.narrative.innerHTML = "";
     const narrativeLines = chatState?.narrative_lines || [];
     if (narrativeLines.length === 0) {
@@ -1889,10 +1902,10 @@
     if (!text) return;
     return navigator.clipboard.writeText(text).then(() => {
       if (!button) return;
-      const original = button.textContent;
+      const original = button.innerHTML;
       button.textContent = "Copied";
       setTimeout(() => {
-        button.textContent = original;
+        button.innerHTML = original;
       }, 1500);
     });
   }
@@ -2094,6 +2107,7 @@
       state.runtime.yamlEditMode = !state.runtime.yamlEditMode;
       if (state.runtime.yamlEditMode) {
         state.runtime.yamlDraft = state.ui.yaml.textContent || "";
+        state.ui.sections.yaml.open = true;
       }
       renderPanel();
     });

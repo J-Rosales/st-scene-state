@@ -200,6 +200,27 @@
   font-size: 0.75rem;
 }
 
+.st-scene-state-icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.st-scene-state-icon-button i {
+  font-size: 0.85em;
+}
+
+.st-scene-state-smallcaps {
+  font-variant: all-small-caps;
+  letter-spacing: 0.04em;
+}
+
+.st-scene-state-action-join {
+  font-size: 0.85em;
+  font-weight: 600;
+  margin-left: 0.05rem;
+}
+
 .st-scene-state-controls {
   margin-top: 0.6rem;
   display: flex;
