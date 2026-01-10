@@ -88,7 +88,12 @@
       yamlDraft: "",
       lastFixtureReport: null,
       settingsObserver: null,
-      panelObserver: null
+      panelObserver: null,
+      messageObserver: null,
+      messageObserverDebounce: null,
+      messageObserverTimeout: null,
+      lastMessageSignature: null,
+      eventHookActive: false
     }
   };
 
@@ -434,6 +439,91 @@
 
   function getEventTypes() {
     return window.SillyTavern?.eventTypes || window.event_types;
+  }
+
+  function getChatContainer() {
+    const context = getContextSafe();
+    const candidates = [
+      context?.elements?.chat,
+      context?.elements?.chatContainer,
+      context?.elements?.messageList,
+      context?.ui?.chat,
+      context?.ui?.chatContainer,
+      context?.ui?.messageList,
+      document.querySelector("#chat"),
+      document.querySelector("#chat_container"),
+      document.querySelector(".chat"),
+      document.querySelector(".mes_list")
+    ];
+    return candidates.find((node) => node instanceof HTMLElement) || null;
+  }
+
+  function getMessageSignature(messages) {
+    if (!messages.length) return "empty";
+    const last = messages[messages.length - 1] || {};
+    const content = typeof last.content === "string" ? last.content.slice(0, 120) : "";
+    return `${messages.length}:${last.role || "unknown"}:${content}`;
+  }
+
+  function inferIsUserFromNode(node) {
+    if (!(node instanceof HTMLElement)) return null;
+    if (node.dataset?.isUser === "true") return true;
+    if (node.dataset?.isUser === "false") return false;
+    if (node.classList.contains("is_user") || node.classList.contains("user")) return true;
+    if (node.classList.contains("is_assistant") || node.classList.contains("assistant")) {
+      return false;
+    }
+    const authorLabel = node.querySelector(".mes_author")?.textContent?.toLowerCase() || "";
+    if (authorLabel.includes("you") || authorLabel.includes("user")) return true;
+    if (authorLabel.includes("assistant") || authorLabel.includes("ai")) return false;
+    return null;
+  }
+
+  function scheduleMessageEvent(payload) {
+    if (state.runtime.messageObserverDebounce) {
+      clearTimeout(state.runtime.messageObserverDebounce);
+    }
+    state.runtime.messageObserverDebounce = setTimeout(() => {
+      handleMessageEvent(payload);
+    }, 150);
+  }
+
+  function observeChatMessages() {
+    if (state.runtime.messageObserver) return;
+    const container = getChatContainer();
+    if (!container) return;
+    const observer = new MutationObserver((mutations) => {
+      const addedNodes = mutations.flatMap((mutation) =>
+        Array.from(mutation.addedNodes || [])
+      );
+      const messageNode = addedNodes.find((node) => {
+        if (!(node instanceof HTMLElement)) return false;
+        if (node.matches(".mes, .message, .chat-message")) return true;
+        return Boolean(node.querySelector?.(".mes, .message, .chat-message"));
+      });
+      if (!messageNode) return;
+      const messages = getChatMessages();
+      const signature = getMessageSignature(messages);
+      if (signature === state.runtime.lastMessageSignature) return;
+      state.runtime.lastMessageSignature = signature;
+      const messageElement =
+        messageNode instanceof HTMLElement
+          ? messageNode.matches(".mes, .message, .chat-message")
+            ? messageNode
+            : messageNode.querySelector(".mes, .message, .chat-message")
+          : null;
+      const inferredIsUser = inferIsUserFromNode(messageElement || messageNode);
+      const lastMessage = messages[messages.length - 1];
+      const isUser =
+        inferredIsUser ??
+        (lastMessage?.role ? lastMessage.role === "user" : undefined);
+      scheduleMessageEvent({
+        is_user: typeof isUser === "boolean" ? isUser : undefined,
+        role: lastMessage?.role
+      });
+    });
+    observer.observe(container, { childList: true, subtree: true });
+    state.runtime.messageObserver = observer;
   }
 
   function getLlmConnectionStatus() {
@@ -2368,7 +2458,7 @@
   function registerMessageHooks() {
     const eventSource = getEventSource();
     const eventTypes = getEventTypes();
-    if (!eventSource || !eventTypes) return;
+    if (!eventSource || !eventTypes) return false;
     const events = [
       eventTypes.MESSAGE_SENT,
       eventTypes.MESSAGE_RECEIVED,
@@ -2380,6 +2470,7 @@
     ].filter(Boolean);
     events.forEach((eventType) => {
       eventSource.on(eventType, (payload) => {
+        state.runtime.eventHookActive = true;
         if (eventType === eventTypes.CHAT_CHANGED) {
           renderPanel();
         } else {
@@ -2387,6 +2478,7 @@
         }
       });
     });
+    return events.length > 0;
   }
 
   function isAssistantEvent(eventPayload) {
@@ -2403,7 +2495,16 @@
   async function init() {
     mountPanel();
     observeExtensionSettingsHost();
-    registerMessageHooks();
+    const hooksRegistered = registerMessageHooks();
+    if (!hooksRegistered) {
+      observeChatMessages();
+    } else {
+      state.runtime.messageObserverTimeout = setTimeout(() => {
+        if (!state.runtime.eventHookActive) {
+          observeChatMessages();
+        }
+      }, 2000);
+    }
     registerPromptInjection();
     const manifest = await loadSchemaManifest();
     if (manifest?.schema_versions?.length) {
