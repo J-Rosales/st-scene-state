@@ -62,6 +62,8 @@
   const state = {
     ui: {
       panel: null,
+      panelWrapper: null,
+      panelToggle: null,
       narrative: null,
       yaml: null,
       yamlEditor: null,
@@ -1447,6 +1449,28 @@
     return panel;
   }
 
+  function buildFloatingPanel() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "drawer-content st-scene-state-floating";
+    wrapper.id = "st-scene-state-floating-panel";
+    const controlBar = document.createElement("div");
+    controlBar.className = "panelControlBar flex-container alignItemsBaseline";
+    controlBar.innerHTML = `
+      <div class="fa-fw fa-solid fa-grip drag-grabber"></div>
+      <div class="inline-drawer-maximize">
+        <i class="floating_panel_maximize fa-fw fa-solid fa-window-maximize"></i>
+      </div>
+      <div class="fa-fw fa-solid fa-circle-xmark floating_panel_close"></div>
+    `;
+    const body = document.createElement("div");
+    body.className = "st-scene-state-body scrollY";
+    const panel = buildPanel();
+    body.appendChild(panel);
+    wrapper.appendChild(controlBar);
+    wrapper.appendChild(body);
+    return { wrapper, panel };
+  }
+
   function renderCharacters(chatState) {
     const list = state.ui.controls.characters;
     if (!list) return;
@@ -1925,26 +1949,11 @@
 
   function mountPanel() {
     if (state.ui.panel) return;
-    const panel = buildPanel();
-    const host =
-      document.querySelector("#right-nav-panel") ||
-      document.querySelector("#right-panel") ||
-      document.body;
-    const wrapper = document.createElement("div");
-    wrapper.className = "st-scene-state-container";
-    const toggle = document.createElement("button");
-    toggle.className = "st-scene-state-toggle";
-    toggle.textContent = "Scene State";
-    toggle.addEventListener("click", () => {
-      wrapper.classList.toggle("is-open");
-      const settings = getExtensionSettings();
-      settings.panel_open = wrapper.classList.contains("is-open");
-      saveSettings();
-    });
-    wrapper.appendChild(toggle);
-    wrapper.appendChild(panel);
+    const { wrapper, panel } = buildFloatingPanel();
+    const host = document.querySelector("#movingDivs") || document.body;
     host.appendChild(wrapper);
     state.ui.panel = panel;
+    state.ui.panelWrapper = wrapper;
     state.ui.status = panel.querySelector("[data-role='status']");
     state.ui.indicator = panel.querySelector("[data-role='indicator']");
     state.ui.timestamp = panel.querySelector("[data-role='timestamp']");
@@ -1996,6 +2005,30 @@
     const settings = getExtensionSettings();
     if (settings.panel_open) {
       wrapper.classList.add("is-open");
+    }
+    const closeButton = wrapper.querySelector(".floating_panel_close");
+    closeButton?.addEventListener("click", () => {
+      wrapper.classList.remove("is-open");
+      const nextSettings = getExtensionSettings();
+      nextSettings.panel_open = false;
+      saveSettings();
+    });
+    const toggleMenu = document.querySelector("#option_toggle_AN");
+    if (toggleMenu && !document.querySelector("#option_toggle_scene_state")) {
+      const menuItem = document.createElement("a");
+      menuItem.id = "option_toggle_scene_state";
+      menuItem.innerHTML = `
+        <i class="fa-lg fa-solid fa-wave-square"></i>
+        <span>Scene State</span>
+      `;
+      toggleMenu.insertAdjacentElement("afterend", menuItem);
+      menuItem.addEventListener("click", () => {
+        wrapper.classList.toggle("is-open");
+        const nextSettings = getExtensionSettings();
+        nextSettings.panel_open = wrapper.classList.contains("is-open");
+        saveSettings();
+      });
+      state.ui.panelToggle = menuItem;
     }
     applySessionToggle(state.ui.sections.narrative, `${EXTENSION_NAME}-narrative-open`);
     applySessionToggle(state.ui.sections.yaml, `${EXTENSION_NAME}-yaml-open`);
