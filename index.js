@@ -1129,8 +1129,69 @@
 
   function sanitizeNarrativeForInjection(lines) {
     const blocked = /\b(you|must|should|please|do not|don't|avoid|instruct)\b/i;
+    const cuePatterns = [
+      "\\breluctant\\b",
+      "\\bdispleasure\\b",
+      "\\bobedien(?:ce|t)\\b",
+      "\\bangry\\b",
+      "\\bfurious\\b",
+      "\\bannoyed\\b",
+      "\\birritated\\b",
+      "\\bupset\\b",
+      "\\bsad\\b",
+      "\\bhappy\\b",
+      "\\bpleased\\b",
+      "\\bsmil(?:e|es|ed)\\s+at\\b",
+      "\\bfrown(?:s|ed)?\\s+at\\b",
+      "\\bglar(?:e|es|ed)\\s+at\\b",
+      "\\bflirt(?:s|ed|ing)?\\b",
+      "\\bblush(?:es|ed|ing)?\\b",
+      "\\blaugh(?:s|ed|ing)?\\b",
+      "\\bsigh(?:s|ed|ing)?\\b",
+      "\\bgrin(?:s|ned|ning)?\\b",
+      "\\bsmirk(?:s|ed|ing)?\\b"
+    ].map((pattern) => ({
+      test: new RegExp(pattern, "i"),
+      replace: new RegExp(pattern, "gi")
+    }));
+    const spatialPatterns = [
+      /\b(on|in|inside|within|at|by|near|beside|next to|adjacent to|against|over|under|beneath|above|behind|in front of|across from|between|around|along|to the left of|to the right of|left of|right of|ahead of)\b/i,
+      /\b(standing|sitting|kneeling|lying|resting|leaning)\s+(on|against|beside|near|by|under|over|behind|in front of)\b/i,
+      /\b(facing|toward|towards)\b/i
+    ];
+    const hasCue = (text) => cuePatterns.some((pattern) => pattern.test.test(text));
+    const hasSpatial = (text) => spatialPatterns.some((pattern) => pattern.test(text));
+    const stripCues = (text) => {
+      let stripped = text;
+      cuePatterns.forEach((pattern) => {
+        stripped = stripped.replace(pattern.replace, "");
+      });
+      return stripped;
+    };
+    const splitClauses = (text) =>
+      text
+        .split(/(?:[.;]|\s+(?:and|but|while|then|as|when|before|after)\s+)/i)
+        .map((clause) => clause.trim())
+        .filter(Boolean);
+    const normalizeClause = (text) =>
+      text
+        .replace(/^[,;:\-]+/, "")
+        .replace(/[,;:\-]+$/, "")
+        .replace(/\s+/g, " ")
+        .trim();
     const cleaned = lines
       .map((line) => String(line.text || "").trim())
+      .map((text) => {
+        if (!text) return "";
+        const lineHasCue = hasCue(text);
+        if (!lineHasCue) return text;
+        const clauses = splitClauses(text);
+        const spatialClauses = clauses
+          .map((clause) => normalizeClause(stripCues(clause)))
+          .filter((clause) => clause && hasSpatial(clause));
+        return spatialClauses.join(" ");
+      })
+      .map((text) => normalizeClause(text))
       .filter((text) => text && !blocked.test(text));
     return cleaned.join(" ");
   }
